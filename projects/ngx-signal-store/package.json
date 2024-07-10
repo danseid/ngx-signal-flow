@@ -1,0 +1,19 @@
+{
+  "name": "ngx-signal-store",
+  "version": "0.0.1",
+  "license": "MIT",
+  "author": "Daniel Seidler",
+  "description": "Simple Signal Store library for Angular",
+  "peerDependencies": {
+    "@angular/core": ">=16.0.0",
+    "@angular/common": ">=16.0.0",
+    "immer": "^10.1.1",
+    "rxjs": ">=6.0.0"
+  },
+  "dependencies": {
+    "tslib": "^2.3.0"
+  },
+  "keywords": ["Angular", "State management", "Signals", "Store"],
+  "repository": "https://github.com/danseid/ngx-signal-store",
+  "sideEffects": false
+}
