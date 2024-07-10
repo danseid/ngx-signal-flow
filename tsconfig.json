@@ -12,7 +12,7 @@
     "esModuleInterop": true,
     "paths": {
       "ngx-signal-store": [
-        "./dist/ngx-signal-store"
+        "./dist/ngx-signal-flow"
       ]
     },
     "sourceMap": true,

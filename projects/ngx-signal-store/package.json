@@ -1,5 +1,5 @@
 {
-  "name": "ngx-signal-store",
+  "name": "ngx-signal-flow",
   "version": "0.0.1",
   "license": "MIT",
   "author": "Daniel Seidler",
@@ -14,6 +14,6 @@
     "tslib": "^2.3.0"
   },
   "keywords": ["Angular", "State management", "Signals", "Store"],
-  "repository": "https://github.com/danseid/ngx-signal-store",
+  "repository": "https://github.com/danseid/ngx-signal-flow',
   "sideEffects": false
 }

@@ -3,23 +3,23 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "ngx-signal-store": {
+    "ngx-signal-flow": {
       "projectType": "library",
-      "root": "projects/ngx-signal-store",
-      "sourceRoot": "projects/ngx-signal-store/src",
+      "root": "projects/ngx-signal-flow",
+      "sourceRoot": "projects/ngx-signal-flow/src",
       "prefix": "lib",
       "architect": {
         "build": {
           "builder": "@angular-devkit/build-angular:ng-packagr",
           "options": {
-            "project": "projects/ngx-signal-store/ng-package.json"
+            "project": "projects/ngx-signal-flow/ng-package.json"
           },
           "configurations": {
             "production": {
-              "tsConfig": "projects/ngx-signal-store/tsconfig.lib.prod.json"
+              "tsConfig": "projects/ngx-signal-flow/tsconfig.lib.prod.json"
             },
             "development": {
-              "tsConfig": "projects/ngx-signal-store/tsconfig.lib.json"
+              "tsConfig": "projects/ngx-signal-flow/tsconfig.lib.json"
             }
           },
           "defaultConfiguration": "production"
@@ -27,7 +27,7 @@
         "test": {
           "builder": "@angular-devkit/build-angular:jest",
           "options": {
-            "tsConfig": "projects/ngx-signal-store/tsconfig.spec.json",
+            "tsConfig": "projects/ngx-signal-flow/tsconfig.spec.json",
             "polyfills": [
               "zone.js",
               "zone.js/testing"
