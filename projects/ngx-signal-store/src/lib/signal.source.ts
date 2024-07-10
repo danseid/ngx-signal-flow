@@ -1,4 +1,4 @@
-import {BaseState, SignalStore} from "./signal.store";
+import {SignalStore} from "./signal.store";
 import {BehaviorSubject, Observable, Subject} from "rxjs";
 import {Effect} from "./signal.effect";
 
