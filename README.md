@@ -1,1 +1,1 @@
-# nix-signal-store
+# ngx-signal-store
