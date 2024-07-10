@@ -1,10 +1,10 @@
-🚀 ngx-signal-store
+🚀 ngx-signal-flow
 
-Welcome to ngx-signal-store, a powerful state management library for Angular applications! 🌟
+Welcome to ngx-signal-flow, a powerful state management library for Angular applications! 🌟
 
 📖 Overview
 
-ngx-signal-store is a lightweight and efficient state management library designed to simplify state handling in your Angular applications. It leverages RxJS and Angular’s reactive programming capabilities to provide a seamless and scalable solution for managing your application’s state.
+ngx-signal-flow is a lightweight and efficient state management library designed to simplify state handling in your Angular applications. It leverages RxJS and Angular’s reactive programming capabilities to provide a seamless and scalable solution for managing your application’s state.
 
 ✨ Features
 
@@ -16,11 +16,11 @@ ngx-signal-store is a lightweight and efficient state management library designe
 
 📦 Installation
 
-To install ngx-signal-store, run the following command in your Angular project:
+To install ngx-signal-flow, run the following command in your Angular project:
 
 🚀 Getting Started
 
-Here’s a quick guide to get you started with ngx-signal-store:
+Here’s a quick guide to get you started with ngx-signal-flow:
 
 📜 License
 
