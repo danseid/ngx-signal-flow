@@ -1,27 +1,31 @@
-# Temp
+🚀 ngx-signal-store
 
-This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 17.0.5.
+Welcome to ngx-signal-store, a powerful state management library for Angular applications! 🌟
 
-## Development server
+📖 Overview
 
-Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The application will automatically reload if you change any of the source files.
+ngx-signal-store is a lightweight and efficient state management library designed to simplify state handling in your Angular applications. It leverages RxJS and Angular’s reactive programming capabilities to provide a seamless and scalable solution for managing your application’s state.
 
-## Code scaffolding
+✨ Features
 
-Run `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.
+	•	🔄 Reactive state management
+	•	🛠️ Easy integration with Angular
+	•	📦 Minimal boilerplate code
+	•	⚡ High performance with RxJS
+	•	✅ Comprehensive unit tests
 
-## Build
+📦 Installation
 
-Run `ng build` to build the project. The build artifacts will be stored in the `dist/` directory.
+To install ngx-signal-store, run the following command in your Angular project:
 
-## Running unit tests
+🚀 Getting Started
 
-Run `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).
+Here’s a quick guide to get you started with ngx-signal-store:
 
-## Running end-to-end tests
+📜 License
 
-Run `ng e2e` to execute the end-to-end tests via a platform of your choice. To use this command, you need to first add a package that implements end-to-end testing capabilities.
+This project is licensed under the MIT License. See the LICENSE file for more details.
 
-## Further help
+💬 Contact
 
-To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI Overview and Command Reference](https://angular.io/cli) page.
+For any questions or feedback, feel free to open an issue.
