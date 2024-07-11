@@ -1,79 +1,100 @@
-import {Source} from "./signal.source";
-import {BehaviorSubject, from, Observable, Subject} from "rxjs";
-import {Effect} from "./signal.effect";
+import {from, Observable, throwError} from "rxjs";
+import {createStore} from "./signal.store";
+import {createSource} from "./signal.source";
 
-describe('Signal Source Test', () => {
-  let store: any;
-  beforeEach(() => {
-    store = {
-      reduce: jest.fn(),
-    };
-  });
-  describe('constructor', () => {
-    it('should initialize a BehaviorSubject if startValue is provided', () => {
-      const startValue = 'test';
-      const source = new Source(store, startValue);
-      expect(source['source']).toBeInstanceOf(BehaviorSubject);
-      expect((source['source'] as BehaviorSubject<string>).value).toBe(startValue);
+describe('createSource', () => {
+
+  describe('Initialization', () => {
+    it('should initialize without a start value', () => {
+      const store = createStore({count: 0});
+      const source = createSource(store);
+
+      expect(source.asObservable()).toBeInstanceOf(Observable);
     });
 
-    it('should initialize a Subject if startValue is not provided', () => {
-      const source = new Source(store);
-      expect(source['source']).toBeInstanceOf(Subject);
-    });
-  });
+    it('should initialize with a start value', () => {
+      const store = createStore({count: 0});
+      const source = createSource(store, 42);
 
-
-  describe('effect', () => {
-    it('should create a new Effect with provided function', () => {
-      const source = new Source(store);
-      const effectFn = jest.fn(() => from('effect result'));
-      const effect = source.effect(effectFn);
-
-      expect(effect).toBeInstanceOf(Effect);
-      expect(effect['effectFn']).toBe(effectFn);
-      expect(effect['source']).toBe(source);
-      expect(effect['store']).toBe(store);
+      let emittedValue;
+      source.asObservable().subscribe(value => emittedValue = value);
+      expect(emittedValue).toBe(42);
     });
   });
 
-  describe('reduce', () => {
-    it('should call store.reduce with the provided function', () => {
-      const source = new Source(store);
-      const reduceFn = jest.fn();
-      const value = 'value';
+  describe('Next Method', () => {
+    it('should emit values via next method', () => {
+      const store = createStore({count: 0});
+      const source = createSource(store);
 
-      source.reduce(reduceFn);
-      source.next(value);
+      let emittedValue;
+      source.asObservable().subscribe(value => emittedValue = value);
 
-      expect(store.reduce).toHaveBeenCalledWith(expect.any(Function));
-      const reduceCallback = store.reduce.mock.calls[0][0];
-      const draft = 'draft';
-      reduceCallback(draft);
+      source(100);
+      expect(emittedValue).toBe(100);
+    });
 
-      expect(reduceFn).toHaveBeenCalledWith(draft, value);
+    it('should emit also when no value is passed', () => {
+      const store = createStore({count: 0});
+      const source = createSource(store);
+
+      let emittedValue;
+      source.asObservable().subscribe(value => emittedValue = value);
+
+      source();
+      expect(emittedValue).toBe(undefined);
     });
   });
 
-  describe('asObservable', () => {
-    it('should return the source as an observable', () => {
-      const source = new Source(store);
-      const observable = source.asObservable();
+  describe('Reduce Method', () => {
+    it('should reduce store state correctly', () => {
+      const store = createStore({count: 0});
+      const source = createSource(store, 0);
 
-      expect(observable).toBeInstanceOf(Observable);
+      source.reduce((draft, value) => {
+        draft.count += value;
+      });
+
+      source(10);
+      expect(store().count).toBe(10);
+
+      source(5);
+      expect(store().count).toBe(15);
     });
   });
 
-  describe('next', () => {
-    it('should push a new value into the source', () => {
-      const startValue = 'initial';
-      const source = new Source(store, startValue);
-      const newValue = 'newValue';
+  describe('Effect Method', () => {
+    it('should execute effect and update state', () => {
+      const store = createStore({count: 0});
+      const source = createSource(store, 0);
 
-      const spy = jest.spyOn(source['source'], 'next');
-      source.next(newValue);
+      const effect = source.effect(value => from([value * 2]));
+      effect.reduce((draft, result) => {
+        draft.count += result;
+      });
 
-      expect(spy).toHaveBeenCalledWith(newValue);
+      source(5);
+      expect(store().count).toBe(10);
+
+      source(3);
+      expect(store().count).toBe(16);
+    });
+
+    it('should handle effect errors and update state', () => {
+      const store = createStore({count: 0});
+      const source = createSource(store, 0);
+
+      const effect = source.effect(value => value === 0 ? throwError(new Error('test error')) : from([value * 2]));
+      effect.reduce((draft, result) => {
+        draft.count += result;
+      });
+
+      source(5);
+      expect(store().count).toBe(10);
+
+      source(0);
+      expect(store().error).toEqual(new Error('test error'));
     });
   });
+
 });

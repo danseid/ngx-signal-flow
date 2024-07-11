@@ -1,12 +1,12 @@
 import {computed, Injector, Signal, signal, WritableSignal} from '@angular/core';
 import {produce} from 'immer';
-import {Source} from "./signal.source";
+import {createSource, Source} from "./signal.source";
 
-export type BaseState<T> = T & { error?: Error };
 type SignalStateOptions = {
   injector?: Injector;
 };
 
+export type BaseState<T> = T & { error?: Error };
 export interface SignalStore<T> {
   /**
    * Returns the snapshot of the store state
@@ -23,7 +23,7 @@ export interface SignalStore<T> {
    * source.next(1);
    * source.asObservable().subscribe(console.log); // 1
    * source.reduce((draft, value) => {
-   *    draft.count = value;
+   * draft.count = value;
    * });
    *
    */
@@ -84,7 +84,7 @@ export const createStore = <T>(initialState: BaseState<T>, options?: SignalState
   const state = signal(initialState);
   const signalStore: SignalStore<T> = () => state();
   signalStore.reduce = signalReducer(state);
-  signalStore.source = <S>(startValue?: S): Source<T, S> => new Source<T, S>(signalStore, startValue);
+  signalStore.source = <S>(startValue?: S): Source<T, S> => createSource(signalStore, startValue);
   signalStore.select = <K extends keyof BaseState<T>>(selector: K) => computed(() => state()[selector]);
   signalStore.compute = <R>(...args: any[]): Signal<R> => {
     const keys = args.slice(0, args.length - 1) as (keyof BaseState<T>)[];

@@ -41,7 +41,7 @@ class TestComponent {
   loading = this.service.countLoading;
   countAndError = this.service.countAndError;
   public next(value: number) {
-    this.service.count$.next(value);
+    this.service.count$(value);
   }
 }
 
