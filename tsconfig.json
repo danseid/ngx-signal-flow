@@ -11,7 +11,7 @@
     "noFallthroughCasesInSwitch": true,
     "esModuleInterop": true,
     "paths": {
-      "ngx-signal-store": [
+      "ngx-signal-flow": [
         "./dist/ngx-signal-flow"
       ]
     },

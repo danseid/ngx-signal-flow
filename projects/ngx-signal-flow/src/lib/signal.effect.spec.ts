@@ -1,6 +1,7 @@
-import {BehaviorSubject, from, throwError} from 'rxjs';
+import {BehaviorSubject, EMPTY, empty, from, Observable, of, Subject, throwError} from 'rxjs';
 import {tap} from 'rxjs/operators';
 import {Effect} from './signal.effect';
+import {Source} from "./signal.source";
 
 describe('Effect', () => {
   let storeMock: any;
@@ -20,7 +21,7 @@ describe('Effect', () => {
 
   describe('constructor', () => {
     it('should initialize loading signal as false', () => {
-      effect = new Effect(storeMock, sourceMock, effectFnMock);
+      effect = new Effect(storeMock, new Source(storeMock), effectFnMock);
       expect(effect.loading()).toBe(false);
     });
   });
