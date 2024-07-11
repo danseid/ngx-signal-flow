@@ -1,6 +1,14 @@
 import {SignalStore} from "./signal.store";
 import {BehaviorSubject, Observable, Subject} from "rxjs";
 import {Effect} from "./signal.effect";
+/*interface Source<T, S> {
+    (value: S): void;
+    effect<R>(effectFn: (value: S) => Observable<R>): Effect<T, S, R>;
+    reduce(fn: (draft: T, value: S) => void): void;
+    asObservable(): Observable<S>;
+    next(value: S): void;
+}*/
+
 
 export class Source<T, S> {
   private source: Subject<S>;
@@ -22,7 +30,9 @@ export class Source<T, S> {
 
   reduce(fn: (draft: T, value: S) => void) {
     this.source.subscribe((value: S) => {
-      this.store.reduce((draft: T) => fn(draft, value));
+      this.store.reduce((draft: T) => {
+        fn(draft, value)
+      });
     });
   }
 

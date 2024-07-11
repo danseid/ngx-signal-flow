@@ -1,5 +1,5 @@
 /*
- * Public API Surface of ngx-signal-store
+ * Public API Surface of ngx-signal-flow
  */
 
 export * from './lib/signal.store';
