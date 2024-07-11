@@ -1,12 +1,12 @@
 import {Signal, signal} from "@angular/core";
 import {Observable} from "rxjs";
 import {SignalStore} from "./signal.store";
-import {Source} from "./signal.source";
+import { Source} from "./signal.source";
 
 /**
  * An interface that represents an effect
  */
-interface EffectI<S,R> {
+export interface Effect<S,R> {
   /**
    * A signal that indicates if the effect is currently loading
    */
@@ -19,7 +19,8 @@ interface EffectI<S,R> {
 }
 
 /**
- * Creates an effect
+ * Creates an effect. An effect is a way to interact with the store and execute side effects.
+ *
  * @param store The store to be affected
  * @param source The source of the effect
  * @param effectFn The function that will be executed
@@ -29,8 +30,8 @@ export const createEffect = <S, T, R>(
   store: SignalStore<S>,
   source: Source<S, T>,
   effectFn: (value: T) => Observable<R>
-): EffectI<S, R> => {
-  // Reduces the store state with the given error and sets loading to false
+): Effect<S, R> => {
+
   const errorReduce = (error?: Error) => {
     store.reduce(draft => {
       draft.error = error;
@@ -60,43 +61,5 @@ export const createEffect = <S, T, R>(
     reduce: (fn: (draft: S, value: R) => void) => {
       reducer = fn;
     }
-  }
-}
-
-export class Effect<S, T, R> {
-  private _loading = signal(false);
-  private reducer?: (draft: S, value: R) => void;
-  loading = this._loading.asReadonly();
-
-  constructor(
-    private store: SignalStore<S>,
-    private source: Source<S, T>,
-    private effectFn: (value: T) => Observable<R>
-  ) {
-    this.source.asObservable().subscribe((value: T) => {
-      this._loading.set(true);
-       this.effectFn(value).subscribe({
-        next: (result: R) => {
-          if(this.reducer) {
-            this.store.reduce(draft => {
-              this.reducer?.(draft, result)
-            });
-          }
-          this.errorReduce();
-        },
-        error: (error: Error) => this.errorReduce(error)
-      });
-    });
-  }
-
-  private errorReduce = (error?: Error) => {
-    this.store.reduce(draft => {
-      draft.error = error;
-    });
-    this._loading.set(false);
-  }
-
-  reduce(fn: (draft: S, value: R) => void): void {
-    this.reducer = fn;
   }
 }
