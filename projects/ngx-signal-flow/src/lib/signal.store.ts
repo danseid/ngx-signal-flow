@@ -44,15 +44,14 @@ export interface SignalStore<T> {
 
    /**
     * Reduces the store state with the given function.
-    * @param s1 The first source
-    * @param s2 The second source
-    * @param fn The function that modifies the state
     * @example
     * store.reduce(countSource, errorSource, (draft, count, error) => {
     *    draft.count = count;
     *    draft.error = error;
     * });
     */
+   reduce<S1>(s1: Source<T, S1>, fn: ((draft: BaseState<T>, s1: S1) => void)): void;
+
    reduce<S1, S2>(s1: Source<T, S1>, s2: Source<T, S2>, fn: ((draft: BaseState<T>, s1: S1, s2: S2) => void)): void;
 
    reduce<S1, S2, S3>(s1: Source<T, S1>, s2: Source<T, S2>, s3: Source<T, S3>, fn: ((draft: BaseState<T>, s1: S1, s2: S2, s3: S3) => void)): void;
@@ -68,6 +67,7 @@ export interface SignalStore<T> {
    reduce<S1, S2, S3, S4, S5, S6, S7, S8>(s1: Source<T, S1>, s2: Source<T, S2>, s3: Source<T, S3>, s4: Source<T, S4>, s5: Source<T, S5>, s6: Source<T, S6>, s7: Source<T, S7>, s8: Source<T, S8>, fn: ((draft: BaseState<T>, s1: S1, s2: S2, s3: S3, s4: S4, s5: S5, s6: S6, s7: S7, s8: S8) => void)): void;
 
    reduce<S1, S2, S3, S4, S5, S6, S7, S8, S9>(s1: Source<T, S1>, s2: Source<T, S2>, s3: Source<T, S3>, s4: Source<T, S4>, s5: Source<T, S5>, s6: Source<T, S6>, s7: Source<T, S7>, s8: Source<T, S8>, s9: Source<T, S9>, fn: ((draft: BaseState<T>, s1: S1, s2: S2, s3: S3, s4: S4, s5: S5, s6: S6, s7: S7, s8: S8, s9: S9) => void)): void;
+
    /**
     * Selects a value from the state.
     * @param selector The key of the value to select
@@ -131,7 +131,7 @@ const signalReducer = <T>(signal: WritableSignal<T>) => (fn: (draft: T) => void)
 export const createStore = <T>(initialState: BaseState<T>, options?: SignalStateOptions): SignalStore<T> => {
    const state = signal(initialState);
    const signalStore: SignalStore<T> = () => state();
-  // signalStore.reduce = signalReducer(state);
+   // signalStore.reduce = signalReducer(state);
    signalStore.source = <S>(startValue?: S): Source<T, S> => createSource(signalStore, startValue);
    signalStore.select = <K extends keyof BaseState<T>>(selector: K) => computed(() => state()[selector]);
    signalStore.compute = <R>(...args: any[]): Signal<R> => {
@@ -146,7 +146,7 @@ export const createStore = <T>(initialState: BaseState<T>, options?: SignalState
       // Extract the sources and the functions array
       const sources = args.slice(0, args.length - 1);
       const fns = args[args.length - 1];
-      if(sources.length === 0) {
+      if (sources.length === 0) {
          signalReducer(state)(fns);
          return;
       }
