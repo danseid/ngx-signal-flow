@@ -61,5 +61,5 @@ export const createEffect = <S, T, R>(
     reduce: (fn: (draft: S, value: R) => void) => {
       reducer = fn;
     }
-  }
+   };
 }
