@@ -1,6 +1,6 @@
 {
   "name": "ngx-signal-flow",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "license": "MIT",
   "author": "Daniel Seidler",
   "description": "Simple Signal Store library for Angular",
