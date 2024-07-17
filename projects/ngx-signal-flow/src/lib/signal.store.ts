@@ -144,7 +144,7 @@ export const createStore = <T>(initialState: BaseState<T>, options?: SignalState
    };
    signalStore.reduce = (...args: any[]): void => {
       // Extract the sources and the functions array
-      const sources = args.slice(0, args.length - 1);
+      const sources: Source<any, any>[] = args.slice(0, args.length - 1);
       const fns = args[args.length - 1];
       if (sources.length === 0) {
          signalReducer(state)(fns);
