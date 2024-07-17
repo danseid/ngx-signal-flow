@@ -146,6 +146,27 @@ store.reduce(source1, source2, (draft: State, val1: number, val2: string) => {
 });
 ```
 
+#### State History - undo, redo
+To undo or redo state changes, use the `store.undo` and `store.redo` methods.
+First initialize the store with the `createStore` function with the `withPatches` option set to `true`. Use the `store.undo` and `store.redo` methods to undo or redo state changes.
+```TypeScript
+const store = createStore<State>({ count: 0 }, { withPatches: true });
+store.reduce((draft: State) => {
+  draft.count  = draft.count + 1;
+});
+// store.count === 1
+store.canRedo(); // false
+store.canUndo(); // true
+store.undo();
+// store.count === 0
+store.canUndo(); // false
+store.canRedo(); // true
+store.redo();
+// store.count === 1
+store.canRedo(); // false
+store.canUndo(); // true
+```
+
 ### 📡 Sources
 
 Sources are signals that emit values to the store. Sources are created using the `store.source` method.
