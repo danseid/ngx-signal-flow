@@ -1,10 +1,11 @@
-import {computed, Injector, Signal, signal, WritableSignal} from '@angular/core';
-import {produce} from 'immer';
+import {computed, Signal, signal, WritableSignal} from '@angular/core';
+import {applyPatches, enablePatches, produce, produceWithPatches} from 'immer';
 import {createSource, Source} from "./signal.source";
-import {combineAll, combineLatest, merge} from "rxjs";
+import {combineLatest} from "rxjs";
+import {createPatchHistory, PatchHistory} from "./signal.history";
 
 type SignalStateOptions = {
-   injector?: Injector;
+   withPatches?: boolean; // Enable history with patches
 };
 
 export type BaseState<T> = T & { error?: Error };
@@ -119,9 +120,35 @@ export interface SignalStore<T> {
       s5: K5,
       fn: (v1: BaseState<T>[K1], v2: BaseState<T>[K2], v3: BaseState<T>[K3], v4: BaseState<T>[K4], v5: BaseState<T>[K5]) => R
    ): Signal<R>;
+
+   /**
+    * Undo the last change
+    */
+   undo(): void;
+
+   /**
+    * Redo the last change
+    */
+   redo(): void;
+
+   /**
+    * Check if the store can undo the last change
+    */
+   canUndo(): boolean;
+
+   /**
+    * Check if the store can redo the last change
+    */
+   canRedo(): boolean;
 }
 
 const signalReducer = <T>(signal: WritableSignal<T>) => (fn: (draft: T) => void) => signal.update((s) => produce(s, fn))
+const signalReducerWithPatches = <T>(signal: WritableSignal<T>, history: PatchHistory) => (fn: (draft: T) => void) => {
+   const currentState = signal();
+   const [nextState, patches, inversePatches] = produceWithPatches(currentState, fn);
+   history.addPatches(patches, inversePatches);
+   signal.set(nextState);
+}
 
 /**
  * Create a store with the given initial state
@@ -129,6 +156,11 @@ const signalReducer = <T>(signal: WritableSignal<T>) => (fn: (draft: T) => void)
  * @param options
  */
 export const createStore = <T>(initialState: BaseState<T>, options?: SignalStateOptions): SignalStore<T> => {
+   let history: PatchHistory | undefined;
+   if (options?.withPatches) {
+      enablePatches();
+      history = createPatchHistory()
+   }
    const state = signal(initialState);
    const signalStore: SignalStore<T> = () => state();
    // signalStore.reduce = signalReducer(state);
@@ -147,6 +179,10 @@ export const createStore = <T>(initialState: BaseState<T>, options?: SignalState
       const sources: Source<any, any>[] = args.slice(0, args.length - 1);
       const fns = args[args.length - 1];
       if (sources.length === 0) {
+         if (options?.withPatches && history) {
+            signalReducerWithPatches(state, history)(fns);
+            return;
+         }
          signalReducer(state)(fns);
          return;
       }
@@ -157,5 +193,23 @@ export const createStore = <T>(initialState: BaseState<T>, options?: SignalState
       });
 
    }
+
+   signalStore.undo = () => {
+      if (history) {
+         const patches = history.undo();
+         state.set(applyPatches(state(), patches));
+      }
+   }
+
+   signalStore.redo = () => {
+      if (history) {
+         const patches = history.redo();
+         state.set(applyPatches(state(), patches));
+      }
+   }
+
+   signalStore.canUndo = () => history ? history.canUndo() : false;
+   signalStore.canRedo = () => history ? history.canRedo() : false;
+
    return signalStore;
 };
