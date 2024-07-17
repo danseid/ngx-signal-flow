@@ -1,7 +1,7 @@
 import {of, throwError} from 'rxjs';
 import {createStore} from './signal.store';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
-import {Component, computed} from '@angular/core';
+import {Component} from '@angular/core';
 
 interface TestState {
    count: number;

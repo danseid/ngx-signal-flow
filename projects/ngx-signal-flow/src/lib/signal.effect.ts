@@ -1,5 +1,5 @@
 import {Signal, signal} from "@angular/core";
-import {Observable} from "rxjs";
+import {Observable, Subscription} from "rxjs";
 import {SignalStore} from "./signal.store";
 import { Source} from "./signal.source";
 
@@ -31,7 +31,7 @@ export const createEffect = <S, T, R>(
   source: Source<S, T>,
   effectFn: (value: T) => Observable<R>
 ): Effect<S, R> => {
-
+  let effectSubscription: Subscription;
   const errorReduce = (error?: Error) => {
     store.reduce(draft => {
       draft.error = error;
@@ -42,8 +42,11 @@ export const createEffect = <S, T, R>(
   let reducer: (draft: S, value: R) => void;
 
   source.asObservable().subscribe((value: T) => {
+      if(effectSubscription) {
+         effectSubscription.unsubscribe();
+      }
     loading.set(true);
-    effectFn(value).subscribe({
+    effectSubscription = effectFn(value).subscribe({
       next: (result: R) => {
         if(reducer) {
           store.reduce(draft => {
