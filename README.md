@@ -210,6 +210,17 @@ source.effect.reduce((draft: State, data: any) => {
 });
 ```
 
+#### Perform Side Effects - combine Sources
+You can combine multiple sources to create an effect that depends on multiple sources.
+```TypeScript
+const source1 = store.source<number>(0);
+const source2 = store.source<string>('');
+
+store.effect(source1, source2, (value1, value2) => {
+  return http.get(`https://api.example.com/${value1}/${value2}`);
+});
+```
+
 #### Convenience State Parameters
 - loading: effect.loading - returns a boolean signal that indicates whether the effect is currently running
 - error: if error occurs, it will be written to state.error
