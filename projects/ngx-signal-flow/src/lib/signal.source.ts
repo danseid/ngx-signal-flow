@@ -25,7 +25,7 @@ export interface Source<T, S> {
 }
 
 export const createSource = <T, S>(store: SignalStore<T>, startValue?: S): Source<T, S> => {
-  const subject: Subject<S> = startValue ? new BehaviorSubject<S>(startValue) : new Subject<S>();
+  const subject: Subject<S> = (startValue !== undefined && startValue !== null) ? new BehaviorSubject<S>(startValue) : new Subject<S>();
   const source = (value?: S) => subject.next(value as S);
   source.asObservable = () => subject.asObservable();
   source.reduce = (fn: (draft: T, value: S) => void) => {
@@ -35,6 +35,7 @@ export const createSource = <T, S>(store: SignalStore<T>, startValue?: S): Sourc
       });
     });
   };
-  source.effect = <R>(effectFn: (value: S) => Observable<R>): Effect<T, R> => createEffect(store, source, effectFn);
+  source.effect = <R>(effectFn: (value: S) => Observable<R>): Effect<T, R> => createEffect(store, source.asObservable(), effectFn);
   return source;
 }
+

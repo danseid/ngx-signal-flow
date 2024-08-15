@@ -1,16 +1,17 @@
 import {Signal, signal} from "@angular/core";
 import {Observable, Subscription} from "rxjs";
 import {SignalStore} from "./signal.store";
-import { Source} from "./signal.source";
+import {Source} from "./signal.source";
 
 /**
  * An interface that represents an effect
  */
-export interface Effect<S,R> {
+export interface Effect<S, R> {
   /**
    * A signal that indicates if the effect is currently loading
    */
   loading: Signal<boolean>;
+
   /**
    * Reduces the store state with the given function
    * @param fn The function that modifies the state
@@ -28,8 +29,8 @@ export interface Effect<S,R> {
  */
 export const createEffect = <S, T, R>(
   store: SignalStore<S>,
-  source: Source<S, T>,
-  effectFn: (value: T) => Observable<R>
+  source: Observable<T>,
+  effectFn: (...value: T[]) => Observable<R>
 ): Effect<S, R> => {
   let effectSubscription: Subscription;
   const errorReduce = (error?: Error) => {
@@ -41,14 +42,20 @@ export const createEffect = <S, T, R>(
   const loading = signal(false);
   let reducer: (draft: S, value: R) => void;
 
-  source.asObservable().subscribe((value: T) => {
-      if(effectSubscription) {
-         effectSubscription.unsubscribe();
-      }
+  source.subscribe((value: T) => {
+    if (effectSubscription) {
+      effectSubscription.unsubscribe();
+    }
     loading.set(true);
-    effectSubscription = effectFn(value).subscribe({
+
+    // Check if value is an array and destructure it if true
+    const effectObservable = Array.isArray(value)
+      ? effectFn(...value)
+      : effectFn(value);
+
+    effectSubscription = effectObservable.subscribe({
       next: (result: R) => {
-        if(reducer) {
+        if (reducer) {
           store.reduce(draft => {
             reducer(draft, result)
           });
@@ -64,5 +71,6 @@ export const createEffect = <S, T, R>(
     reduce: (fn: (draft: S, value: R) => void) => {
       reducer = fn;
     }
-   };
+  };
 }
+
