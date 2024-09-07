@@ -159,7 +159,7 @@ To perform side effects based on the state of the store, use the `store.effect` 
 It is not like other effects, it will be executed every time the state changes.
 ```TypeScript
 store.effect((state: State) => {
-  return http.get(`https://api.example.com/${state.count}`);
+  console.log('State changed:', state);
 });
 ```
 
