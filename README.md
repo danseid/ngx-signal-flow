@@ -103,6 +103,14 @@ import { createStore } from "ngx-signal-flow";
 
 const store = createStore<State>({ count: 0 });
 ```
+
+#### Store as Observable
+The store is an observable that emits the state whenever it changes. You can subscribe to the store to get the state.
+```TypeScript
+store.asObservable().subscribe((state: State) => {
+  // handle state changes
+});
+```
 #### Selecting Store State - select
 To access the state of the store, use the `store.select` method with the key of the state as an argument.
 It returns an angular signal, that can be used in the template or in the component.
@@ -143,6 +151,15 @@ store.reduce(source, (draft: State, value: number) => {
 store.reduce(source1, source2, (draft: State, val1: number, val2: string) => {
    draft.count = draft.count + val1;
    draft.name = val2;
+});
+```
+
+#### Perform Side Effects - effect
+To perform side effects based on the state of the store, use the `store.effect` method with an effect function as an argument.
+It is not like other effects, it will be executed every time the state changes.
+```TypeScript
+store.effect((state: State) => {
+  return http.get(`https://api.example.com/${state.count}`);
 });
 ```
 
