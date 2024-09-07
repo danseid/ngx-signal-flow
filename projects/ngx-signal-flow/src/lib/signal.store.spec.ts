@@ -1,7 +1,8 @@
 import {of, throwError} from 'rxjs';
 import {createStore} from './signal.store';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
-import {Component} from '@angular/core';
+import {Component, effect} from '@angular/core';
+import {Effect} from "./signal.effect";
 
 interface TestState {
    count: number;
@@ -132,8 +133,8 @@ describe('State Store Effects Test', () => {
          draft.total = value
       });
       let round = 0;
-      const subscription = store.asObservable().subscribe( state => {
-         switch(round) {
+      const subscription = store.asObservable().subscribe(state => {
+         switch (round) {
             case 0:
                expect(state.count).toBe(0);
                expect(state.total).toBe(0);
@@ -164,8 +165,9 @@ describe('State Store Effects Test', () => {
          draft.total = value
       });
       let round = 0;
-      store.effect( state => {
-         switch(round) {
+      let eff: Effect<TestState, unknown>;
+      eff = store.effect(state => {
+         switch (round) {
             case 0:
                expect(state.count).toBe(0);
                expect(state.total).toBe(0);
@@ -173,17 +175,26 @@ describe('State Store Effects Test', () => {
             case 1:
                expect(state.count).toBe(2);
                expect(state.total).toBe(1);
+               expect(eff.loading()).toBe(true);
+               setTimeout(() => {
+                  expect(eff.loading()).toBe(false);
+               }, 1);
                break;
             case 2:
                expect(state.count).toBe(4);
                expect(state.total).toBe(2);
+               expect(eff.loading()).toBe(true);
+               setTimeout(() => {
+                  expect(eff.loading()).toBe(false);
+               }, 1);
                done();
                break;
             default:
                done.fail();
          }
-         return of(round++);
+         round++;
       });
+
       source(1);
       source(2);
    });
@@ -191,7 +202,6 @@ describe('State Store Effects Test', () => {
       const store = createStore<TestState>({count: 0, total: 0});
       const source1 = store.source<number>(0);
       const source2 = store.source<number>(0);
-
       const effect = store.effect(source1, source2, (value1, value2) => of(value1 + value2));
       effect.reduce((draft, value) => draft.count = value);
       expect(store().count).toBe(0);

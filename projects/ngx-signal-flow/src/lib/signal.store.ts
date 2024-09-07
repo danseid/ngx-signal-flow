@@ -3,7 +3,7 @@ import {applyPatches, enablePatches, produce, produceWithPatches} from 'immer';
 import {createSource, Source} from "./signal.source";
 import {BehaviorSubject, combineLatest, Observable} from "rxjs";
 import {createPatchHistory, PatchHistory} from "./signal.history";
-import {createEffect, Effect} from "./signal.effect";
+import {createEffect, createStoreEffect, Effect} from "./signal.effect";
 import {toObservable} from "@angular/core/rxjs-interop";
 
 type SignalStateOptions = {
@@ -85,7 +85,7 @@ export interface SignalStore<T> {
     * countEffect.loading.subscribe(console.log); // true
     */
 
-   effect<R>(effectFn: (value: BaseState<T>) => Observable<R>): Effect<T, R>;
+   effect<R>(effectFn: (value: BaseState<T>) => void): Effect<T, R>;
 
    effect<S1, R>(s1: Source<T, S1>, effectFn: (value: S1) => Observable<R>): Effect<T, R>;
 
@@ -236,7 +236,7 @@ export const createStore = <T>(initialState: BaseState<T>, options?: SignalState
    signalStore.effect = <R>(...args: any[]): Effect<T, R> => {
       if(args.length === 1) {
          const effectFn = args[0];
-         return createEffect(signalStore, stateObservable, effectFn);
+         return createStoreEffect(signalStore, effectFn);
       }
       const sources: Source<any, any>[] = args.slice(0, args.length - 1);
       const observables = sources.map(s => s.asObservable());
