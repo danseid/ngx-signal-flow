@@ -1,5 +1,5 @@
 import {computed, Signal, signal, WritableSignal} from '@angular/core';
-import {applyPatches, enablePatches, produce, produceWithPatches} from 'immer';
+import {applyPatches, enableMapSet, enablePatches, produce, produceWithPatches} from 'immer';
 import {createSource, Source} from "./signal.source";
 import {BehaviorSubject, combineLatest, Observable} from "rxjs";
 import {createPatchHistory, PatchHistory} from "./signal.history";
@@ -8,6 +8,7 @@ import {toObservable} from "@angular/core/rxjs-interop";
 
 type SignalStateOptions = {
    withPatches?: boolean; // Enable history with patches
+   withMapSet?: boolean; // Enable map and set for immer js
 };
 
 export type BaseState<T> = T & { error?: Error };
@@ -196,6 +197,9 @@ export const createStore = <T>(initialState: BaseState<T>, options?: SignalState
    if (options?.withPatches) {
       enablePatches();
       history = createPatchHistory()
+   }
+   if(options?.withMapSet) {
+     enableMapSet();
    }
    const stateObservable = new BehaviorSubject(initialState);
    const state = signal(initialState);

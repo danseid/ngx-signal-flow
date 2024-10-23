@@ -7,6 +7,7 @@ import {Effect} from "./signal.effect";
 interface TestState {
    count: number;
    total: number;
+   innerSet?: Set<number>;
 }
 
 class TestServiceWithStore {
@@ -116,6 +117,21 @@ describe('State Store Test', () => {
 
 
    });
+
+  it('should enable map and set for immerjs', (done) => {
+    const store = createStore<TestState>({count: 0, total: 0, innerSet: new Set<number>()}, {withMapSet: true});
+    const source = store.source<number>(0);
+    source.reduce((draft, value) => {
+      draft.count = value;
+      draft.innerSet?.add(value);
+    });
+    store.asObservable().subscribe(state => {
+      expect(state.innerSet).toBeInstanceOf(Set);
+      expect(state.innerSet?.size).toBe(1);
+      done();
+    });
+    source(1);
+  });
 });
 
 
@@ -212,4 +228,5 @@ describe('State Store Effects Test', () => {
       source2(3);
       expect(store().count).toBe(5);
    });
+
 })
