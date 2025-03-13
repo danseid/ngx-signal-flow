@@ -1,6 +1,6 @@
 {
   "name": "ngx-signal-flow",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "license": "MIT",
   "author": "Daniel Seidler",
   "description": "Simple Signal Store library for Angular",
@@ -13,7 +13,12 @@
   "dependencies": {
     "tslib": "^2.3.0"
   },
-  "keywords": ["Angular", "State management", "Signals", "Store"],
+  "keywords": [
+    "Angular",
+    "State management",
+    "Signals",
+    "Store"
+  ],
   "repository": "https://github.com/danseid/ngx-signal-flow",
   "sideEffects": false
 }
