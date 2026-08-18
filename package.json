@@ -3,43 +3,41 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve",
-    "build": "ng build",
-    "postbuild": "tsc --declaration --emitDeclarationOnly",
-    "watch": "ng build --watch --configuration development",
-    "test": "ng test",
+    "start": "ng serve example",
+    "build": "ng build ngx-signal-flow",
+    "watch": "ng build ngx-signal-flow --watch --configuration development",
+    "test": "ng test ngx-signal-flow --no-watch --no-progress",
+    "test:example": "ng test example --no-watch --no-progress",
     "build:lib": "ng build ngx-signal-flow --configuration=production",
     "postbuild:lib": "copyfiles README.md LICENSE dist/ngx-signal-flow",
-    "bundle-report": "ng build --configuration production --source-map && source-map-explorer dist/browser/*.js"
+    "bundle-report": "ng build example --configuration production --source-map && source-map-explorer dist/example/browser/*.js"
   },
   "private": true,
   "dependencies": {
-    "@angular/animations": "^17.0.0",
-    "@angular/common": "^17.0.0",
-    "@angular/compiler": "^17.0.0",
-    "@angular/core": "^17.0.0",
-    "@angular/forms": "^17.0.0",
-    "@angular/platform-browser": "^17.0.0",
-    "@angular/platform-browser-dynamic": "^17.0.0",
-    "@angular/router": "^17.0.0",
-    "immer": "^10.1.1",
-    "rxjs": "~7.8.0",
-    "tslib": "^2.3.0",
-    "zone.js": "~0.14.6"
+    "@angular/common": "^22.1.2",
+    "@angular/compiler": "^22.1.2",
+    "@angular/core": "^22.1.2",
+    "@angular/platform-browser": "^22.1.2",
+    "@angular/router": "^22.1.2",
+    "immer": "^11.1.17",
+    "rxjs": "~7.8.2",
+    "tslib": "^2.8.1",
+    "zone.js": "~0.16.2"
   },
   "devDependencies": {
-    "@angular-devkit/build-angular": "^17.3.8",
-    "@angular/cli": "^17.0.5",
-    "@angular/compiler-cli": "^17.0.0",
-    "@types/jest": "^29.5.12",
+    "@angular/build": "^22.1.4",
+    "@angular/cli": "^22.1.4",
+    "@angular/compiler-cli": "^22.1.2",
     "copyfiles": "^2.4.1",
-    "jest": "^29.7.0",
-    "jest-environment-jsdom": "^29.7.0",
-    "jest-preset-angular": "^14.1.1",
-    "ng-packagr": "^17.0.0",
-    "typescript": "~5.4.5"
+    "jsdom": "^30.0.1",
+    "ng-packagr": "^22.1.1",
+    "typescript": "~6.0.3",
+    "vitest": "~4.0.8"
+  },
+  "engines": {
+    "node": "^22.22.3 || ^24.15.0 || >=26.0.0"
   },
   "volta": {
-    "node": "20.15.1"
+    "node": "22.22.3"
   }
 }

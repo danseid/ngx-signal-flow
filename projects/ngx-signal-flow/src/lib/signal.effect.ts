@@ -1,8 +1,6 @@
 import {Signal, signal} from "@angular/core";
-import {Observable, of, Subscription} from "rxjs";
+import {Observable, Subscription} from "rxjs";
 import {SignalStore} from "./signal.store";
-import {Source} from "./signal.source";
-import {state} from "@angular/animations";
 
 /**
  * An interface that represents an effect
@@ -21,12 +19,8 @@ export interface Effect<S, R> {
 }
 
 export const createStoreEffect = <S, R>(store: SignalStore<S>, effectFn: (value: S) => void): Effect<S, R> => {
-   let effectSubscription: Subscription;
    const loading = signal(false);
    store.asObservable().subscribe((s) => {
-      if (effectSubscription) {
-         effectSubscription.unsubscribe();
-      }
       loading.set(true);
       effectFn(s);
       loading.set(false);
@@ -50,7 +44,7 @@ export const createEffect = <S, T, R>(
    source: Observable<T>,
    effectFn: (...value: T[]) => Observable<R>
 ): Effect<S, R> => {
-   let effectSubscription: Subscription;
+   let effectSubscription: Subscription | undefined;
    const errorReduce = (error?: Error) => {
       store.reduce(draft => {
          draft.error = error;
@@ -58,24 +52,22 @@ export const createEffect = <S, T, R>(
       loading.set(false);
    }
    const loading = signal(false);
-   let reducer: (draft: S, value: R) => void;
+   let reducer: ((draft: S, value: R) => void) | undefined;
 
    source.subscribe((value: T) => {
-      if (effectSubscription) {
-         effectSubscription.unsubscribe();
-      }
+      effectSubscription?.unsubscribe();
       loading.set(true);
 
-      // Check if value is an array and destructure it if true
-      let effectObservable = Array.isArray(value)
+      const effectObservable = Array.isArray(value)
          ? effectFn(...value)
          : effectFn(value);
 
       effectSubscription = effectObservable.subscribe({
          next: (result: R) => {
             if (reducer) {
+               const reduceFn = reducer;
                store.reduce(draft => {
-                  reducer(draft, result)
+                  reduceFn(draft, result)
                });
             }
             errorReduce();

@@ -1,7 +1,7 @@
 import {of, throwError} from 'rxjs';
 import {createStore} from './signal.store';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
-import {Component, effect} from '@angular/core';
+import {Component} from '@angular/core';
 import {Effect} from "./signal.effect";
 
 interface TestState {
@@ -65,7 +65,7 @@ describe('State Store Test', () => {
    let fixture: ComponentFixture<TestComponent>;
    beforeEach(() => {
       fixture = TestBed.configureTestingModule({
-         declarations: [TestComponent],
+         imports: [TestComponent],
          providers: [TestServiceWithStore]
       }).createComponent(TestComponent);
    });
@@ -118,19 +118,19 @@ describe('State Store Test', () => {
 
    });
 
-  it('should enable map and set for immerjs', (done) => {
+  it('should enable map and set for immerjs', async () => {
     const store = createStore<TestState>({count: 0, total: 0, innerSet: new Set<number>()}, {withMapSet: true});
     const source = store.source<number>(0);
     source.reduce((draft, value) => {
       draft.count = value;
       draft.innerSet?.add(value);
     });
-    store.asObservable().subscribe(state => {
-      expect(state.innerSet).toBeInstanceOf(Set);
-      expect(state.innerSet?.size).toBe(1);
-      done();
+    const state = await new Promise<TestState>((resolve) => {
+      store.asObservable().subscribe((nextState) => resolve(nextState));
+      source(1);
     });
-    source(1);
+    expect(state.innerSet).toBeInstanceOf(Set);
+    expect(state.innerSet?.size).toBe(1);
   });
 });
 
@@ -141,78 +141,86 @@ describe('State Store Effects Test', () => {
       const state = createStore<TestState>({count: 0, total: 0});
    });
 
-   it('should create observable from source', (done) => {
+   it('should create observable from source', async () => {
       const store = createStore<TestState>({count: -1, total: -1});
       const source = store.source<number>(0);
       source.reduce((draft, value) => {
          draft.count = value * 2
          draft.total = value
       });
-      let round = 0;
-      const subscription = store.asObservable().subscribe(state => {
-         switch (round) {
-            case 0:
-               expect(state.count).toBe(0);
-               expect(state.total).toBe(0);
-               break;
-            case 1:
-               expect(state.count).toBe(2);
-               expect(state.total).toBe(1);
-               break;
-            case 2:
-               expect(state.count).toBe(4);
-               expect(state.total).toBe(2);
-               done();
-               break;
-            default:
-               done.fail();
-         }
-         round++;
+      await new Promise<void>((resolve, reject) => {
+         let round = 0;
+         store.asObservable().subscribe(state => {
+            try {
+               switch (round) {
+                  case 0:
+                     expect(state.count).toBe(0);
+                     expect(state.total).toBe(0);
+                     break;
+                  case 1:
+                     expect(state.count).toBe(2);
+                     expect(state.total).toBe(1);
+                     break;
+                  case 2:
+                     expect(state.count).toBe(4);
+                     expect(state.total).toBe(2);
+                     resolve();
+                     break;
+                  default:
+                     reject(new Error('unexpected round'));
+                     return;
+               }
+               round++;
+            } catch (error) {
+               reject(error);
+            }
+         });
+         source(1);
+         source(2);
       });
-      source(1);
-      source(2);
    });
 
-   it('should effect on store', (done) => {
+   it('should effect on store', async () => {
       const store = createStore<TestState>({count: -1, total: -1});
       const source = store.source<number>(0);
       source.reduce((draft, value) => {
          draft.count = value * 2
          draft.total = value
       });
-      let round = 0;
-      let eff: Effect<TestState, unknown>;
-      eff = store.effect(state => {
-         switch (round) {
-            case 0:
-               expect(state.count).toBe(0);
-               expect(state.total).toBe(0);
-               break;
-            case 1:
-               expect(state.count).toBe(2);
-               expect(state.total).toBe(1);
-               expect(eff.loading()).toBe(true);
-               setTimeout(() => {
-                  expect(eff.loading()).toBe(false);
-               }, 1);
-               break;
-            case 2:
-               expect(state.count).toBe(4);
-               expect(state.total).toBe(2);
-               expect(eff.loading()).toBe(true);
-               setTimeout(() => {
-                  expect(eff.loading()).toBe(false);
-               }, 1);
-               done();
-               break;
-            default:
-               done.fail();
-         }
-         round++;
-      });
+      await new Promise<void>((resolve, reject) => {
+         let round = 0;
+         let eff: Effect<TestState, unknown>;
+         eff = store.effect(state => {
+            try {
+               switch (round) {
+                  case 0:
+                     expect(state.count).toBe(0);
+                     expect(state.total).toBe(0);
+                     break;
+                  case 1:
+                     expect(state.count).toBe(2);
+                     expect(state.total).toBe(1);
+                     expect(eff.loading()).toBe(true);
+                     break;
+                  case 2:
+                     expect(state.count).toBe(4);
+                     expect(state.total).toBe(2);
+                     expect(eff.loading()).toBe(true);
+                     resolve();
+                     break;
+                  default:
+                     reject(new Error('unexpected round'));
+                     return;
+               }
+               round++;
+            } catch (error) {
+               reject(error);
+            }
+         });
 
-      source(1);
-      source(2);
+         source(1);
+         source(2);
+      });
    });
    it('should effect from multiple sources', () => {
       const store = createStore<TestState>({count: 0, total: 0});

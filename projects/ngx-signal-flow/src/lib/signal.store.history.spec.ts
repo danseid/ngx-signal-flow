@@ -45,7 +45,7 @@ describe('State Store Test', () => {
    let fixture: ComponentFixture<TestComponent>;
    beforeEach(() => {
       fixture = TestBed.configureTestingModule({
-         declarations: [TestComponent],
+         imports: [TestComponent],
          providers: [TestServiceWithStore]
       }).createComponent(TestComponent);
    });

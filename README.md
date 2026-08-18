@@ -18,6 +18,8 @@ ngx-signal-flow is a lightweight and efficient state management library designed
 
 ## 📦 Installation
 
+ngx-signal-flow supports **Angular 19, 20, 21, and 22**.
+
 To install ngx-signal-flow, run the following command in your Angular project:
 ```Bash
 npm install ngx-signal-flow
