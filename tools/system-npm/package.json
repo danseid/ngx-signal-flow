@@ -1,0 +1,9 @@
+{
+  "name": "npm",
+  "version": "10.9.9",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "npm": "./npm-cli.js"
+  }
+}
