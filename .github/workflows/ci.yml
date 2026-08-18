@@ -40,6 +40,7 @@ jobs:
           node-version: 22.22.3
           cache: npm
       - run: npm ci
+      - run: npm run build:lib
       - run: npx semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
