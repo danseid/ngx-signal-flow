@@ -13,7 +13,7 @@
     [
       "@semantic-release/exec",
       {
-        "prepareCmd": "npm version ${nextRelease.version} --no-git-tag-version --prefix projects/ngx-signal-flow && npm run build:lib"
+        "prepareCmd": "npm version ${nextRelease.version} --allow-same-version --no-git-tag-version --prefix projects/ngx-signal-flow && npm run build:lib"
       }
     ],
     [
