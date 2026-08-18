@@ -20,6 +20,7 @@ ngx-signal-flow is a lightweight and efficient state management library designed
 
 ngx-signal-flow supports **Angular 19, 20, 21, and 22**.
 
+
 To install ngx-signal-flow, run the following command in your Angular project:
 ```Bash
 npm install ngx-signal-flow
@@ -244,8 +245,18 @@ store.effect(source1, source2, (value1, value2) => {
 - loading: effect.loading - returns a boolean signal that indicates whether the effect is currently running
 - error: if error occurs, it will be written to state.error
 
+## 🚀 Releasing
 
- 
+Releases are automated with [semantic-release](https://semantic-release.gitbook.io/) on GitHub Actions.
+
+Merge conventional commits to `main`:
+
+- `feat:` → minor (e.g. 0.2.3 → 0.3.0)
+- `fix:` → patch (e.g. 0.3.0 → 0.3.1)
+- `feat:` / `fix:` with `BREAKING CHANGE:` in the body → major
+
+CI tests, versions, publishes `ngx-signal-flow` to npm, updates `CHANGELOG.md`, and creates a GitHub Release.
+
 ## 📜 License
 
 This project is licensed under the MIT License. See the LICENSE file for more details.
