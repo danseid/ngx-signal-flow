@@ -200,6 +200,18 @@ const source = store.source(0)
 // emit a value
 source(1)
 ```
+#### Connect a Signal or Input - connect
+Use `source.connect` to forward an Angular `input()` or any other signal into an existing source.
+`undefined` is skipped by default, so optional inputs can be wired without a manual `effect`.
+Call it in a constructor or another injection context.
+
+```TypeScript
+value = input<number | undefined>(undefined);
+
+constructor() {
+  this.store.setCount.connect(this.value);
+}
+```
 #### Modify Store State - reduce
 To modify the state of the store, use the `source.reduce` method with a reducer function as an argument.
 The emitted value is passed as an argument to the reducer function.

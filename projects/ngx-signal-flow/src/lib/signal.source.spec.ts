@@ -1,3 +1,5 @@
+import {Component, input, signal} from "@angular/core";
+import {ComponentFixture, TestBed} from "@angular/core/testing";
 import {from, Observable, throwError} from "rxjs";
 import {createStore} from "./signal.store";
 import {createSource} from "./signal.source";
@@ -94,6 +96,98 @@ describe('createSource', () => {
 
       source(0);
       expect(store().error).toEqual(new Error('test error'));
+    });
+  });
+
+  describe('Connect', () => {
+    @Component({
+      template: '',
+    })
+    class ConnectHostComponent {
+      value = signal<number | undefined>(undefined);
+      store = createStore({count: 0});
+      countSource = this.store.source<number>();
+
+      constructor() {
+        this.countSource.reduce((draft, value) => {
+          draft.count = value;
+        });
+        this.countSource.connect(this.value);
+      }
+    }
+
+    @Component({
+      template: '',
+    })
+    class InputHostComponent {
+      value = input<number | undefined>(undefined);
+      store = createStore({count: 0});
+      setCount = this.store.source<number>();
+
+      constructor() {
+        this.setCount.reduce((draft, value) => {
+          draft.count = value;
+        });
+        this.setCount.connect(this.value);
+      }
+    }
+
+    @Component({
+      template: '',
+    })
+    class EmitUndefinedComponent {
+      value = signal<number | undefined>(undefined);
+      store = createStore({count: 0 as number | undefined});
+      countSource = this.store.source<number | undefined>();
+
+      constructor() {
+        this.countSource.reduce((draft, value) => {
+          draft.count = value;
+        });
+        this.countSource.connect(this.value, {skipUndefined: false});
+      }
+    }
+
+    let fixture: ComponentFixture<ConnectHostComponent>;
+
+    beforeEach(() => {
+      TestBed.configureTestingModule({
+        imports: [ConnectHostComponent, InputHostComponent, EmitUndefinedComponent],
+      });
+      fixture = TestBed.createComponent(ConnectHostComponent);
+    });
+
+    it('should skip undefined and apply later signal values', () => {
+      TestBed.flushEffects();
+      expect(fixture.componentInstance.store().count).toBe(0);
+
+      fixture.componentInstance.value.set(5);
+      TestBed.flushEffects();
+      expect(fixture.componentInstance.store().count).toBe(5);
+
+      fixture.componentInstance.value.set(undefined);
+      TestBed.flushEffects();
+      expect(fixture.componentInstance.store().count).toBe(5);
+    });
+
+    it('should connect an input signal to a source', () => {
+      const inputFixture = TestBed.createComponent(InputHostComponent);
+      TestBed.flushEffects();
+      expect(inputFixture.componentInstance.store().count).toBe(0);
+
+      inputFixture.componentRef.setInput('value', 5);
+      TestBed.flushEffects();
+      expect(inputFixture.componentInstance.store().count).toBe(5);
+    });
+
+    it('should emit undefined when skipUndefined is false', () => {
+      const undefinedFixture = TestBed.createComponent(EmitUndefinedComponent);
+      TestBed.flushEffects();
+      expect(undefinedFixture.componentInstance.store().count).toBeUndefined();
+
+      undefinedFixture.componentInstance.value.set(3);
+      TestBed.flushEffects();
+      expect(undefinedFixture.componentInstance.store().count).toBe(3);
     });
   });
 

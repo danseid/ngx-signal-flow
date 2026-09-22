@@ -1,9 +1,11 @@
 import {computed, Signal, signal} from '@angular/core';
 import {applyPatches, enableMapSet, enablePatches, produce, produceWithPatches} from 'immer';
-import {createSource, Source} from "./signal.source";
+import {ConnectOptions, createSource, Source} from "./signal.source";
 import {BehaviorSubject, combineLatest, Observable} from "rxjs";
 import {createPatchHistory, PatchHistory} from "./signal.history";
 import {createEffect, createStoreEffect, Effect} from "./signal.effect";
+
+export type {ConnectOptions, Source};
 
 type SignalStateOptions = {
    withPatches?: boolean; // Enable history with patches
