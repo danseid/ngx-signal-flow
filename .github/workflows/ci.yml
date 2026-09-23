@@ -23,6 +23,8 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -30,10 +32,22 @@ jobs:
           node-version: 22.22.3
           cache: npm
       - run: npm ci
-      - run: npm test
+      - run: npm run test:coverage
       - run: npm run build:lib
       - run: npm run test:example
-      - run: npm run performance:check
+      - run: npm run --silent performance:check > performance-report.json
+      - name: Publish badges
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          node tools/badges.mjs --out badges
+          cd badges
+          git init --quiet --initial-branch=badges
+          git add .
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit --quiet --message "chore: update badges for ${GITHUB_SHA}"
+          git push --force --quiet "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" badges
 
   release:
     needs: [audit, test]

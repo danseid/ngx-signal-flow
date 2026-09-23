@@ -1,5 +1,16 @@
 # 🚀 ngx-signal-flow
 
+[![CI](https://github.com/danseid/ngx-signal-flow/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/danseid/ngx-signal-flow/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/danseid/ngx-signal-flow/badges/coverage.json)](https://github.com/danseid/ngx-signal-flow/actions/workflows/ci.yml)
+[![Branch coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/danseid/ngx-signal-flow/badges/branches.json)](https://github.com/danseid/ngx-signal-flow/actions/workflows/ci.yml)
+[![npm version](https://img.shields.io/npm/v/ngx-signal-flow)](https://www.npmjs.com/package/ngx-signal-flow)
+[![npm downloads](https://img.shields.io/npm/dm/ngx-signal-flow)](https://www.npmjs.com/package/ngx-signal-flow)
+[![createStore size](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/danseid/ngx-signal-flow/badges/bundle-size.json)](#performance-checks)
+[![createCoreStore size](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/danseid/ngx-signal-flow/badges/core-bundle-size.json)](#performance-checks)
+[![Angular](https://img.shields.io/npm/dependency-version/ngx-signal-flow/peer/@angular/core?label=angular)](https://angular.dev)
+[![License](https://img.shields.io/npm/l/ngx-signal-flow)](LICENSE)
+[![semantic-release](https://img.shields.io/badge/semantic--release-angular-e10079?logo=semantic-release)](https://github.com/semantic-release/semantic-release)
+
 Welcome to ngx-signal-flow, a powerful state management library for Angular applications! 🌟
 
 ## 📖 Overview
@@ -285,6 +296,8 @@ store.effect(source1, source2, (value1, value2) => {
 ## Performance checks
 
 Run `npm run performance` to build the library and report runtime probes plus minified and gzip bundle sizes. CI uses `npm run performance:check` to enforce deterministic behavior and bundle ceilings.
+
+Run `npm run test:coverage` for a coverage report. On every push to `main`, CI publishes the coverage and bundle size badges to the `badges` branch.
 
 ## 🚀 Releasing
 
