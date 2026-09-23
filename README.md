@@ -14,7 +14,7 @@ ngx-signal-flow is a lightweight and efficient state management library designed
 - 🔒 Type-safe state management
 - 📦 Minimal boilerplate code
 - ⚡ High performance with RxJS
-- ✅ Comprehensive unit tests
+- ✅ Comprehensive unit and integration tests
 
 ## 📦 Installation
 
