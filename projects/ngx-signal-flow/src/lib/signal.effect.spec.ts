@@ -13,16 +13,21 @@ describe('createEffect', () => {
       expect(effect.loading()).toBe(false);
     });
 
-    it('should be true when effect starts', () => {
-      const store = createStore({ count: 0 });
-      const source = store.source<string>()
-      const effect = createEffect(store, source.asObservable(), (value: string) => timer(100).pipe(map(() => 'result')));
+    it('should be true while an async effect is running', () => {
+      vi.useFakeTimers();
+      try {
+        const store = createStore({ count: 0 });
+        const source = store.source<string>()
+        const effect = createEffect(store, source.asObservable(), (value: string) => timer(100).pipe(map(() => 'result')));
 
-      source('test');
-      expect(effect.loading()).toBe(true);
-      setTimeout(() => {
+        source('test');
+        expect(effect.loading()).toBe(true);
+
+        vi.advanceTimersByTime(100);
         expect(effect.loading()).toBe(false);
-      }, 200);
+      } finally {
+        vi.useRealTimers();
+      }
     });
 
     it('should be false when effect completes', () => {
