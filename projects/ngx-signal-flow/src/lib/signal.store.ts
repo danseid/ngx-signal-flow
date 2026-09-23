@@ -5,7 +5,7 @@ import type {Patch} from 'immer';
 import {BehaviorSubject, combineLatest, Subscription} from 'rxjs';
 import type {Observable, Subject} from 'rxjs';
 import {createState} from './signal.core';
-import type {BaseState, CoreSignalStore} from './signal.core';
+import type {BaseState, CoreSignalStore, NonEmpty} from './signal.core';
 import {createEffect, createStoreEffect} from './signal.effect';
 import type {Effect, StoreEffect} from './signal.effect';
 import {findHistoryFeature} from './signal.features';
@@ -13,10 +13,10 @@ import type {StoreFeature} from './signal.features';
 import {createPatchHistory} from './signal.history';
 import type {PatchHistory} from './signal.history';
 import {createSource} from './signal.source';
-import type {ConnectOptions, Source, SourceArguments} from './signal.source';
+import type {AnySource, ConnectOptions, Source, SourceArguments, SourceValue, SourceValues} from './signal.source';
 
-export type {BaseState} from './signal.core';
-export type {ConnectOptions, Effect, Source, SourceArguments, StoreEffect};
+export type {BaseState, NonEmpty, StateKey, StateValues} from './signal.core';
+export type {AnySource, ConnectOptions, Effect, Source, SourceArguments, SourceValue, SourceValues, StoreEffect};
 
 export interface SignalStore<T> extends CoreSignalStore<T> {
   /**
@@ -54,78 +54,8 @@ export interface SignalStore<T> extends CoreSignalStore<T> {
    *   draft.name = name;
    * });
    */
-  reduce<S1>(s1: Source<T, S1>, fn: (draft: BaseState<T>, s1: S1) => void): Subscription;
-
-  reduce<S1, S2>(s1: Source<T, S1>, s2: Source<T, S2>, fn: (draft: BaseState<T>, s1: S1, s2: S2) => void): Subscription;
-
-  reduce<S1, S2, S3>(
-    s1: Source<T, S1>,
-    s2: Source<T, S2>,
-    s3: Source<T, S3>,
-    fn: (draft: BaseState<T>, s1: S1, s2: S2, s3: S3) => void,
-  ): Subscription;
-
-  reduce<S1, S2, S3, S4>(
-    s1: Source<T, S1>,
-    s2: Source<T, S2>,
-    s3: Source<T, S3>,
-    s4: Source<T, S4>,
-    fn: (draft: BaseState<T>, s1: S1, s2: S2, s3: S3, s4: S4) => void,
-  ): Subscription;
-
-  reduce<S1, S2, S3, S4, S5>(
-    s1: Source<T, S1>,
-    s2: Source<T, S2>,
-    s3: Source<T, S3>,
-    s4: Source<T, S4>,
-    s5: Source<T, S5>,
-    fn: (draft: BaseState<T>, s1: S1, s2: S2, s3: S3, s4: S4, s5: S5) => void,
-  ): Subscription;
-
-  reduce<S1, S2, S3, S4, S5, S6>(
-    s1: Source<T, S1>,
-    s2: Source<T, S2>,
-    s3: Source<T, S3>,
-    s4: Source<T, S4>,
-    s5: Source<T, S5>,
-    s6: Source<T, S6>,
-    fn: (draft: BaseState<T>, s1: S1, s2: S2, s3: S3, s4: S4, s5: S5, s6: S6) => void,
-  ): Subscription;
-
-  reduce<S1, S2, S3, S4, S5, S6, S7>(
-    s1: Source<T, S1>,
-    s2: Source<T, S2>,
-    s3: Source<T, S3>,
-    s4: Source<T, S4>,
-    s5: Source<T, S5>,
-    s6: Source<T, S6>,
-    s7: Source<T, S7>,
-    fn: (draft: BaseState<T>, s1: S1, s2: S2, s3: S3, s4: S4, s5: S5, s6: S6, s7: S7) => void,
-  ): Subscription;
-
-  reduce<S1, S2, S3, S4, S5, S6, S7, S8>(
-    s1: Source<T, S1>,
-    s2: Source<T, S2>,
-    s3: Source<T, S3>,
-    s4: Source<T, S4>,
-    s5: Source<T, S5>,
-    s6: Source<T, S6>,
-    s7: Source<T, S7>,
-    s8: Source<T, S8>,
-    fn: (draft: BaseState<T>, s1: S1, s2: S2, s3: S3, s4: S4, s5: S5, s6: S6, s7: S7, s8: S8) => void,
-  ): Subscription;
-
-  reduce<S1, S2, S3, S4, S5, S6, S7, S8, S9>(
-    s1: Source<T, S1>,
-    s2: Source<T, S2>,
-    s3: Source<T, S3>,
-    s4: Source<T, S4>,
-    s5: Source<T, S5>,
-    s6: Source<T, S6>,
-    s7: Source<T, S7>,
-    s8: Source<T, S8>,
-    s9: Source<T, S9>,
-    fn: (draft: BaseState<T>, s1: S1, s2: S2, s3: S3, s4: S4, s5: S5, s6: S6, s7: S7, s8: S8, s9: S9) => void,
+  reduce<const Sources extends NonEmpty<AnySource>>(
+    ...args: [...sources: Sources, fn: (draft: BaseState<T>, ...values: SourceValues<Sources>) => void]
   ): Subscription;
 
   /**
@@ -144,101 +74,8 @@ export interface SignalStore<T> extends CoreSignalStore<T> {
    * });
    * loadEffect.loading(); // true while the request is running
    */
-  effect<S1, R>(s1: Source<T, S1>, effectFn: (value: S1) => Observable<R>): Effect<T, R>;
-
-  effect<S1, S2, R>(
-    s1: Source<T, S1>,
-    s2: Source<T, S2>,
-    effectFn: (value1: S1, value2: S2) => Observable<R>,
-  ): Effect<T, R>;
-
-  effect<S1, S2, S3, R>(
-    s1: Source<T, S1>,
-    s2: Source<T, S2>,
-    s3: Source<T, S3>,
-    effectFn: (value1: S1, value2: S2, value3: S3) => Observable<R>,
-  ): Effect<T, R>;
-
-  effect<S1, S2, S3, S4, R>(
-    s1: Source<T, S1>,
-    s2: Source<T, S2>,
-    s3: Source<T, S3>,
-    s4: Source<T, S4>,
-    effectFn: (value1: S1, value2: S2, value3: S3, value4: S4) => Observable<R>,
-  ): Effect<T, R>;
-
-  effect<S1, S2, S3, S4, S5, R>(
-    s1: Source<T, S1>,
-    s2: Source<T, S2>,
-    s3: Source<T, S3>,
-    s4: Source<T, S4>,
-    s5: Source<T, S5>,
-    effectFn: (value1: S1, value2: S2, value3: S3, value4: S4, value5: S5) => Observable<R>,
-  ): Effect<T, R>;
-
-  effect<S1, S2, S3, S4, S5, S6, R>(
-    s1: Source<T, S1>,
-    s2: Source<T, S2>,
-    s3: Source<T, S3>,
-    s4: Source<T, S4>,
-    s5: Source<T, S5>,
-    s6: Source<T, S6>,
-    effectFn: (value1: S1, value2: S2, value3: S3, value4: S4, value5: S5, value6: S6) => Observable<R>,
-  ): Effect<T, R>;
-
-  effect<S1, S2, S3, S4, S5, S6, S7, R>(
-    s1: Source<T, S1>,
-    s2: Source<T, S2>,
-    s3: Source<T, S3>,
-    s4: Source<T, S4>,
-    s5: Source<T, S5>,
-    s6: Source<T, S6>,
-    s7: Source<T, S7>,
-    effectFn: (value1: S1, value2: S2, value3: S3, value4: S4, value5: S5, value6: S6, value7: S7) => Observable<R>,
-  ): Effect<T, R>;
-
-  effect<S1, S2, S3, S4, S5, S6, S7, S8, R>(
-    s1: Source<T, S1>,
-    s2: Source<T, S2>,
-    s3: Source<T, S3>,
-    s4: Source<T, S4>,
-    s5: Source<T, S5>,
-    s6: Source<T, S6>,
-    s7: Source<T, S7>,
-    s8: Source<T, S8>,
-    effectFn: (
-      value1: S1,
-      value2: S2,
-      value3: S3,
-      value4: S4,
-      value5: S5,
-      value6: S6,
-      value7: S7,
-      value8: S8,
-    ) => Observable<R>,
-  ): Effect<T, R>;
-
-  effect<S1, S2, S3, S4, S5, S6, S7, S8, S9, R>(
-    s1: Source<T, S1>,
-    s2: Source<T, S2>,
-    s3: Source<T, S3>,
-    s4: Source<T, S4>,
-    s5: Source<T, S5>,
-    s6: Source<T, S6>,
-    s7: Source<T, S7>,
-    s8: Source<T, S8>,
-    s9: Source<T, S9>,
-    effectFn: (
-      value1: S1,
-      value2: S2,
-      value3: S3,
-      value4: S4,
-      value5: S5,
-      value6: S6,
-      value7: S7,
-      value8: S8,
-      value9: S9,
-    ) => Observable<R>,
+  effect<const Sources extends NonEmpty<AnySource>, R>(
+    ...args: [...sources: Sources, effectFn: (...values: SourceValues<Sources>) => Observable<R>]
   ): Effect<T, R>;
 
   /**

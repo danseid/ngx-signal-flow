@@ -6,7 +6,11 @@ import type {MapSetFeature} from './signal.features';
 
 export type BaseState<T> = T & {error?: Error};
 
-type StateKey<T> = keyof BaseState<T>;
+export type StateKey<T> = keyof BaseState<T>;
+
+export type StateValues<T, Keys extends readonly StateKey<T>[]> = {[I in keyof Keys]: BaseState<T>[Keys[I]]};
+
+export type NonEmpty<T> = readonly [T, ...T[]];
 
 export interface CoreSignalStore<T> {
   /**
@@ -37,49 +41,8 @@ export interface CoreSignalStore<T> {
    * const summary = store.compute('count', 'error', (count, error) => ({count, error}));
    * summary(); // {count: 0, error: undefined}
    */
-  compute<K1 extends StateKey<T>, R>(s1: K1, fn: (v1: BaseState<T>[K1]) => R): Signal<R>;
-
-  compute<K1 extends StateKey<T>, K2 extends StateKey<T>, R>(
-    s1: K1,
-    s2: K2,
-    fn: (v1: BaseState<T>[K1], v2: BaseState<T>[K2]) => R,
-  ): Signal<R>;
-
-  compute<K1 extends StateKey<T>, K2 extends StateKey<T>, K3 extends StateKey<T>, R>(
-    s1: K1,
-    s2: K2,
-    s3: K3,
-    fn: (v1: BaseState<T>[K1], v2: BaseState<T>[K2], v3: BaseState<T>[K3]) => R,
-  ): Signal<R>;
-
-  compute<K1 extends StateKey<T>, K2 extends StateKey<T>, K3 extends StateKey<T>, K4 extends StateKey<T>, R>(
-    s1: K1,
-    s2: K2,
-    s3: K3,
-    s4: K4,
-    fn: (v1: BaseState<T>[K1], v2: BaseState<T>[K2], v3: BaseState<T>[K3], v4: BaseState<T>[K4]) => R,
-  ): Signal<R>;
-
-  compute<
-    K1 extends StateKey<T>,
-    K2 extends StateKey<T>,
-    K3 extends StateKey<T>,
-    K4 extends StateKey<T>,
-    K5 extends StateKey<T>,
-    R,
-  >(
-    s1: K1,
-    s2: K2,
-    s3: K3,
-    s4: K4,
-    s5: K5,
-    fn: (
-      v1: BaseState<T>[K1],
-      v2: BaseState<T>[K2],
-      v3: BaseState<T>[K3],
-      v4: BaseState<T>[K4],
-      v5: BaseState<T>[K5],
-    ) => R,
+  compute<const Keys extends NonEmpty<StateKey<T>>, R>(
+    ...args: [...keys: Keys, fn: (...values: StateValues<T, Keys>) => R]
   ): Signal<R>;
 }
 

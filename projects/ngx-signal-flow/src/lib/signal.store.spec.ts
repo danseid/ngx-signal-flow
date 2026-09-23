@@ -230,6 +230,27 @@ describe('State Store Effects Test', () => {
     expect(store().count).toBe(5);
   });
 
+  it('combines any number of sources and state keys with typed values', () => {
+    const store = createStore({a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, total: 0, label: ''});
+    const sources = Array.from({length: 10}, (_, index) => store.source(index));
+    const [s0, s1, s2, s3, s4, s5, s6, s7, s8] = sources;
+    const text = store.source('sum');
+    store.reduce(s0, s1, s2, s3, s4, s5, s6, s7, s8, text, (draft, v0, v1, v2, v3, v4, v5, v6, v7, v8, label) => {
+      draft.total = v0 + v1 + v2 + v3 + v4 + v5 + v6 + v7 + v8;
+      draft.label = label.toUpperCase();
+    });
+    const sum = store.compute('a', 'b', 'c', 'd', 'e', 'f', (a, b, c, d, e, f) => a + b + c + d + e + f);
+
+    expect(store().total).toBe(36);
+    expect(store().label).toBe('SUM');
+    expect(sum()).toBe(21);
+
+    // @ts-expect-error unknown state key
+    store.compute('missing', (value) => value);
+    // @ts-expect-error source values keep their types
+    store.reduce(text, (draft, value: number) => (draft.total = value));
+  });
+
   it('delivers changes in order when a store effect reduces synchronously', () => {
     const store = createStore({count: 0});
     store.effect((state) => {

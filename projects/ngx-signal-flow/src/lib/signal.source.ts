@@ -17,6 +17,12 @@ export type ConnectOptions = {
  */
 export type SourceArguments<S> = undefined extends S ? [value?: S] : [value: S];
 
+export type AnySource = {asObservable(): Observable<unknown>};
+
+export type SourceValue<X> = X extends {asObservable(): Observable<infer S>} ? S : never;
+
+export type SourceValues<Sources extends readonly unknown[]> = {[I in keyof Sources]: SourceValue<Sources[I]>};
+
 /**
  * Source represents a source of data. It can be used to emit values and interact with the store.
  */
