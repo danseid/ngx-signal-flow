@@ -23,6 +23,7 @@ export default tseslint.config(
     },
     rules: {
       '@typescript-eslint/consistent-type-imports': 'error',
+      '@typescript-eslint/no-confusing-void-expression': 'off',
       '@typescript-eslint/no-extraneous-class': 'off',
       '@typescript-eslint/restrict-template-expressions': ['error', {allowNumber: true}],
     },
@@ -30,8 +31,9 @@ export default tseslint.config(
   {
     files: ['**/*.spec.ts', 'projects/ngx-signal-flow/src/lib/integration/**/*.ts'],
     rules: {
+      '@typescript-eslint/no-invalid-void-type': 'off',
       '@typescript-eslint/no-non-null-assertion': 'off',
-      '@typescript-eslint/no-confusing-void-expression': 'off',
+      '@typescript-eslint/prefer-promise-reject-errors': 'off',
       '@typescript-eslint/unbound-method': 'off',
     },
   },

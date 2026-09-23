@@ -144,6 +144,7 @@ describe('source effect integration', () => {
         if (amount < 0) {
           throw new Error('Amount must be positive');
         }
+        // eslint-disable-next-line @typescript-eslint/only-throw-error -- verifies that non-Error throws are wrapped
         throw 'unknown failure';
       });
       readonly loading = this.submitEffect.loading;

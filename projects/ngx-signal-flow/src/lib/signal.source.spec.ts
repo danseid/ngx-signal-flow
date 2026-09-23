@@ -1,5 +1,6 @@
 import {Component, input, signal} from '@angular/core';
-import {ComponentFixture, TestBed} from '@angular/core/testing';
+import type {ComponentFixture} from '@angular/core/testing';
+import {TestBed} from '@angular/core/testing';
 import {from, Observable, throwError} from 'rxjs';
 import {createStore} from './signal.store';
 import {createSource} from './signal.source';
@@ -111,7 +112,9 @@ describe('createSource', () => {
       const store = createStore({count: 0});
       const source = createSource(store, 0);
 
-      const effect = source.effect((value) => (value === 0 ? throwError(new Error('test error')) : from([value * 2])));
+      const effect = source.effect((value) =>
+        value === 0 ? throwError(() => new Error('test error')) : from([value * 2]),
+      );
       effect.reduce((draft, result) => {
         draft.count += result;
       });
@@ -162,7 +165,7 @@ describe('createSource', () => {
     })
     class EmitUndefinedComponent {
       value = signal<number | undefined>(undefined);
-      store = createStore({count: 0 as number | undefined});
+      store = createStore<{count: number | undefined}>({count: 0});
       countSource = this.store.source<number | undefined>();
 
       constructor() {
@@ -183,35 +186,35 @@ describe('createSource', () => {
     });
 
     it('should skip undefined and apply later signal values', () => {
-      TestBed.flushEffects();
+      TestBed.tick();
       expect(fixture.componentInstance.store().count).toBe(0);
 
       fixture.componentInstance.value.set(5);
-      TestBed.flushEffects();
+      TestBed.tick();
       expect(fixture.componentInstance.store().count).toBe(5);
 
       fixture.componentInstance.value.set(undefined);
-      TestBed.flushEffects();
+      TestBed.tick();
       expect(fixture.componentInstance.store().count).toBe(5);
     });
 
     it('should connect an input signal to a source', () => {
       const inputFixture = TestBed.createComponent(InputHostComponent);
-      TestBed.flushEffects();
+      TestBed.tick();
       expect(inputFixture.componentInstance.store().count).toBe(0);
 
       inputFixture.componentRef.setInput('value', 5);
-      TestBed.flushEffects();
+      TestBed.tick();
       expect(inputFixture.componentInstance.store().count).toBe(5);
     });
 
     it('should emit undefined when skipUndefined is false', () => {
       const undefinedFixture = TestBed.createComponent(EmitUndefinedComponent);
-      TestBed.flushEffects();
+      TestBed.tick();
       expect(undefinedFixture.componentInstance.store().count).toBeUndefined();
 
       undefinedFixture.componentInstance.value.set(3);
-      TestBed.flushEffects();
+      TestBed.tick();
       expect(undefinedFixture.componentInstance.store().count).toBe(3);
     });
   });

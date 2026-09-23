@@ -2,7 +2,8 @@ import {of, Subject, throwError} from 'rxjs';
 import {createStore} from './signal.store';
 import {withHistory, withMapSet} from './signal.features';
 import {createCoreStore} from './signal.core';
-import {ComponentFixture, TestBed} from '@angular/core/testing';
+import type {ComponentFixture} from '@angular/core/testing';
+import {TestBed} from '@angular/core/testing';
 import {Component, effect, Injector} from '@angular/core';
 
 interface TestState {
@@ -134,7 +135,9 @@ describe('State Store Test', () => {
 
 describe('State Store Effects Test', () => {
   it('should initialize state', () => {
-    const state = createStore<TestState>({count: 0, total: 0});
+    const store = createStore<TestState>({count: 0, total: 0});
+
+    expect(store()).toEqual({count: 0, total: 0});
   });
 
   it('should create observable from source', async () => {

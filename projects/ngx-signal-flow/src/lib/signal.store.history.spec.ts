@@ -1,7 +1,8 @@
 import {createStore} from './signal.store';
 import {withHistory} from './signal.features';
 import type {StoreFeature} from './signal.features';
-import {ComponentFixture, TestBed} from '@angular/core/testing';
+import type {ComponentFixture} from '@angular/core/testing';
+import {TestBed} from '@angular/core/testing';
 import {Component, computed} from '@angular/core';
 
 interface TestState {

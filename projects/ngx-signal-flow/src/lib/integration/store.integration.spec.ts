@@ -122,7 +122,8 @@ describe('plain store integration', () => {
 
       noop() {
         this.store.reduce((draft) => {
-          draft.count = draft.count;
+          const {count} = draft;
+          draft.count = count;
         });
       }
     }

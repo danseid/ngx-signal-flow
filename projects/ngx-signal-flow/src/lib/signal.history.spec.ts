@@ -29,7 +29,7 @@ describe('Signal History', () => {
 
   it('should undo patches', () => {
     const history = createPatchHistory();
-    const [newState, patches, inversePatches] = produceWithPatches(baseState, (draft) => {
+    const [, patches, inversePatches] = produceWithPatches(baseState, (draft) => {
       draft.count = 1;
     });
     history.addPatches(patches, inversePatches);
@@ -40,7 +40,7 @@ describe('Signal History', () => {
 
   it('should redo patches', () => {
     const history = createPatchHistory();
-    const [newState, patches, inversePatches] = produceWithPatches(baseState, (draft) => {
+    const [, patches, inversePatches] = produceWithPatches(baseState, (draft) => {
       draft.count = 1;
     });
     history.addPatches(patches, inversePatches);
@@ -97,7 +97,7 @@ describe('Signal History', () => {
       draft.count = 1;
     });
     history.addPatches(patches, inversePatches);
-    const [newState2, patches2, inversePatches2] = produceWithPatches(newState, (draft) => {
+    const [, patches2, inversePatches2] = produceWithPatches(newState, (draft) => {
       draft.count = 2;
     });
     history.addPatches(patches2, inversePatches2);
@@ -105,7 +105,7 @@ describe('Signal History', () => {
     state = applyPatches(state, inversePatches2);
     expect(state.count).toBe(1);
 
-    const [newState3, patches3, inversePatches3] = produceWithPatches(state, (draft) => {
+    const [, patches3, inversePatches3] = produceWithPatches(state, (draft) => {
       draft.count = 3;
     });
 
