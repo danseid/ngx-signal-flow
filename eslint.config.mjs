@@ -4,7 +4,7 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   {
-    ignores: ['dist/', 'coverage/', 'badges/', '.angular/', 'tools/system-npm/'],
+    ignores: ['dist/', 'coverage/', 'badges/', '.angular/', 'tools/system-npm/', 'tools/compatibility/'],
   },
   eslint.configs.recommended,
   {

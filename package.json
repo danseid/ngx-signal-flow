@@ -17,7 +17,8 @@
     "postbuild:lib": "node -e \"for (const file of ['README.md', 'LICENSE']) require('node:fs').copyFileSync(file, 'dist/ngx-signal-flow/' + file)\"",
     "release": "semantic-release",
     "performance": "npm run build:lib && node tools/performance.mjs",
-    "performance:check": "node tools/performance.mjs --check"
+    "performance:check": "node tools/performance.mjs --check",
+    "compatibility": "node tools/compatibility.mjs"
   },
   "private": true,
   "repository": {
