@@ -21,6 +21,32 @@ describe('createSource', () => {
       source.asObservable().subscribe((value) => (emittedValue = value));
       expect(emittedValue).toBe(42);
     });
+
+    it('should keep null as a start value', () => {
+      const store = createStore({count: 0});
+      const source = store.source<number | null>(null);
+
+      let emittedValue: number | null | 'nothing' = 'nothing';
+      source.asObservable().subscribe((value) => (emittedValue = value));
+      expect(emittedValue).toBeNull();
+    });
+  });
+
+  describe('Call Signature', () => {
+    it('requires a value unless the source type accepts undefined', () => {
+      const store = createStore({count: 0});
+      const count = store.source<number>();
+      const trigger = store.source<void>();
+      const optional = store.source<number | undefined>();
+
+      // @ts-expect-error a number source needs a value
+      count();
+      trigger();
+      optional();
+      count(1);
+
+      expect(store().count).toBe(0);
+    });
   });
 
   describe('Next Method', () => {
