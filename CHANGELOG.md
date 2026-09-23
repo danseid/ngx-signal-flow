@@ -1,3 +1,17 @@
+# [0.4.0](https://github.com/danseid/ngx-signal-flow/compare/v0.3.0...v0.4.0) (2026-09-23)
+
+
+### Bug Fixes
+
+* **ci:** restore library build before semantic-release ([a969e13](https://github.com/danseid/ngx-signal-flow/commit/a969e13baa54704cbc78b0a399c3523f7d5613b9))
+* prevent Angular effect feedback loops and restore effect loading state ([5251098](https://github.com/danseid/ngx-signal-flow/commit/5251098d56a861c1803b82ad93124c73128e7641))
+
+
+### Features
+
+* add a core store, bounded undo history, and performance checks ([f4a662e](https://github.com/danseid/ngx-signal-flow/commit/f4a662ee5273440641cb90e40a110003514c9fbe))
+* add source.connect to forward Angular signals and inputs ([e61f8b0](https://github.com/danseid/ngx-signal-flow/commit/e61f8b033e6d3cbaa26c7cc89824f6ad64ac850c))
+
 # [0.3.0](https://github.com/danseid/ngx-signal-flow/compare/v0.2.3...v0.3.0) (2026-08-18)
 
 
