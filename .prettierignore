@@ -1,0 +1,6 @@
+dist/
+coverage/
+badges/
+.angular/
+package-lock.json
+CHANGELOG.md
