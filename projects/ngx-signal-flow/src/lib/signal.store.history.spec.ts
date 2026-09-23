@@ -1,6 +1,8 @@
 import {createStore} from './signal.store';
+import {withHistory} from './signal.features';
+import type {StoreFeature} from './signal.features';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
-import {Component} from '@angular/core';
+import {Component, computed} from '@angular/core';
 
 interface TestState {
   count: number;
@@ -8,12 +10,7 @@ interface TestState {
 }
 
 class TestServiceWithStore {
-  private state = createStore<TestState>(
-    {count: 0, total: 0},
-    {
-      withPatches: true,
-    },
-  );
+  private state = createStore<TestState>({count: 0, total: 0}, withHistory());
 
   public readonly count$ = this.state.source<number>();
 
@@ -27,8 +24,8 @@ class TestServiceWithStore {
 
   public undo = this.state.undo.bind(this.state);
   public redo = this.state.redo.bind(this.state);
-  public canUndo = this.state.canUndo.bind(this.state);
-  public canRedo = this.state.canRedo.bind(this.state);
+  public canUndo = this.state.canUndo;
+  public canRedo = this.state.canRedo;
 }
 
 @Component({
@@ -123,5 +120,51 @@ describe('State Store Test', () => {
     expect(component.count()).toBe(4);
     component.service.undo();
     expect(component.count()).toBe(1);
+  });
+});
+
+describe('history feature', () => {
+  const increment = (draft: {count: number}) => {
+    draft.count++;
+  };
+
+  it('keeps 100 undo steps by default', () => {
+    const store = createStore({count: 0}, withHistory());
+    Array.from({length: 101}, () => store.reduce(increment));
+
+    Array.from({length: 101}, () => store.undo());
+
+    expect(store().count).toBe(1);
+    expect(store.canUndo()).toBe(false);
+  });
+
+  it('keeps every change with an infinite limit', () => {
+    const store = createStore({count: 0}, withHistory({limit: Infinity}));
+    Array.from({length: 150}, () => store.reduce(increment));
+
+    Array.from({length: 150}, () => store.undo());
+
+    expect(store().count).toBe(0);
+  });
+
+  it('exposes canUndo and canRedo as signals', () => {
+    const store = createStore({count: 0}, withHistory());
+    const buttons = computed(() => ({undo: store.canUndo(), redo: store.canRedo()}));
+    expect(buttons()).toEqual({undo: false, redo: false});
+
+    store.reduce(increment);
+    expect(buttons()).toEqual({undo: true, redo: false});
+
+    store.undo();
+    expect(buttons()).toEqual({undo: false, redo: true});
+
+    store.redo();
+    expect(buttons()).toEqual({undo: true, redo: false});
+  });
+
+  it('rejects the removed options object', () => {
+    const legacyOptions = {withPatches: true} as unknown as StoreFeature;
+
+    expect(() => createStore({count: 0}, legacyOptions)).toThrow(/withHistory\(\)/);
   });
 });

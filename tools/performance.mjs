@@ -10,11 +10,12 @@ const toolsDirectory = dirname(fileURLToPath(import.meta.url));
 const workspaceDirectory = dirname(toolsDirectory);
 const bundlePath = join(workspaceDirectory, 'dist/ngx-signal-flow/fesm2022/ngx-signal-flow.mjs');
 const baselinePath = join(toolsDirectory, 'performance-baseline.json');
+const checkMode = process.argv.includes('--check');
 
-const median = (values) => values.sort((left, right) => left - right)[Math.floor(values.length / 2)];
+const median = (values) => values.toSorted((left, right) => left - right)[Math.floor(values.length / 2)];
 
-const measureUpdates = (createStore, count, withPatches) => {
-  const store = createStore({count: 0}, withPatches ? {withPatches: true} : undefined);
+const measureUpdates = ({createStore, withHistory}, count, recordHistory) => {
+  const store = recordHistory ? createStore({count: 0}, withHistory()) : createStore({count: 0});
   const startedAt = performance.now();
 
   for (let index = 0; index < count; index++) {
@@ -26,25 +27,23 @@ const measureUpdates = (createStore, count, withPatches) => {
   return performance.now() - startedAt;
 };
 
-const measureHistoryScaling = (createStore) =>
+const measureHistoryScaling = (library) =>
   [1_000, 2_000, 4_000, 8_000].map((count) => {
-    measureUpdates(createStore, count, false);
-    measureUpdates(createStore, count, true);
+    measureUpdates(library, count, false);
+    measureUpdates(library, count, true);
 
-    const plainSamples = Array.from({length: 5}, () => measureUpdates(createStore, count, false));
-    const patchSamples = Array.from({length: 5}, () => measureUpdates(createStore, count, true));
-    const plainMilliseconds = median(plainSamples);
-    const patchMilliseconds = median(patchSamples);
+    const plainMilliseconds = median(Array.from({length: 5}, () => measureUpdates(library, count, false)));
+    const historyMilliseconds = median(Array.from({length: 5}, () => measureUpdates(library, count, true)));
 
     return {
       count,
       plainMilliseconds: Number(plainMilliseconds.toFixed(2)),
-      patchMilliseconds: Number(patchMilliseconds.toFixed(2)),
-      patchToPlainRatio: Number((patchMilliseconds / plainMilliseconds).toFixed(2)),
+      historyMilliseconds: Number(historyMilliseconds.toFixed(2)),
+      historyToPlainRatio: Number((historyMilliseconds / plainMilliseconds).toFixed(2)),
     };
   });
 
-const measureRuntime = (createStore) => {
+const measureRuntime = ({createStore, withHistory}) => {
   const noOpStore = createStore({count: 0});
   let noOpEmissions = 0;
   noOpStore.asObservable().subscribe(() => noOpEmissions++);
@@ -63,10 +62,10 @@ const measureRuntime = (createStore) => {
   });
   source(1);
 
-  const patchStore = createStore({count: 0}, {withPatches: true});
-  let patchEmissionsAfterNoOp = 0;
-  patchStore.asObservable().subscribe(() => patchEmissionsAfterNoOp++);
-  patchStore.reduce(() => undefined);
+  const historyStore = createStore({count: 0}, withHistory());
+  let historyEmissionsAfterNoOp = 0;
+  historyStore.asObservable().subscribe(() => historyEmissionsAfterNoOp++);
+  historyStore.reduce(() => undefined);
 
   const selectorStore = createStore({selected: 0, unrelated: 0});
   let computeRuns = 0;
@@ -83,25 +82,24 @@ const measureRuntime = (createStore) => {
   });
   selectors.forEach((selector) => selector());
 
-  effect.destroy?.();
-  source.destroy?.();
+  effect.destroy();
+  source.destroy();
 
   return {
     noOpEmissions,
     effectEmissionsForOneResult,
-    emptyPatchCreatesUndoStep: patchStore.canUndo(),
-    patchEmissionsAfterNoOp,
+    emptyPatchCreatesUndoStep: historyStore.canUndo(),
+    patchEmissionsAfterNoOp: historyEmissionsAfterNoOp,
     selectorRecomputationsAfterUnrelatedUpdate: computeRuns - runsBeforeUnrelatedUpdate,
-    historyScaling: measureHistoryScaling(createStore),
   };
 };
 
-const measureBundle = async (exportName) => {
+const measureBundle = async (exportNames) => {
   const result = await build({
     stdin: {
-      contents: `import {${exportName}} from './dist/ngx-signal-flow/fesm2022/ngx-signal-flow.mjs'; globalThis.__ngxSignalFlow = ${exportName};`,
+      contents: `import {${exportNames.join(', ')}} from './dist/ngx-signal-flow/fesm2022/ngx-signal-flow.mjs'; globalThis.__ngxSignalFlow = [${exportNames.join(', ')}];`,
       resolveDir: workspaceDirectory,
-      sourcefile: `${exportName}.mjs`,
+      sourcefile: 'entry.mjs',
     },
     bundle: true,
     define: {
@@ -150,22 +148,23 @@ const checkBaseline = (report, baseline) => {
 };
 
 const library = await import(`${pathToFileURL(bundlePath).href}?performance=${Date.now()}`);
-const bundle = {
-  createStore: await measureBundle('createStore'),
-};
-
-if (library.createCoreStore) {
-  bundle.createCoreStore = await measureBundle('createCoreStore');
-}
 
 const report = {
-  runtime: measureRuntime(library.createStore),
-  bundle,
+  runtime: measureRuntime(library),
+  bundle: {
+    createStore: await measureBundle(['createStore']),
+    createStoreWithFeatures: await measureBundle(['createStore', 'withHistory', 'withMapSet']),
+    createCoreStore: await measureBundle(['createCoreStore']),
+  },
 };
+
+if (!checkMode) {
+  report.historyScaling = measureHistoryScaling(library);
+}
 
 console.log(JSON.stringify(report, null, 2));
 
-if (process.argv.includes('--check')) {
+if (checkMode) {
   const baseline = JSON.parse(await readFile(baselinePath, 'utf8'));
   const failures = checkBaseline(report, baseline);
 

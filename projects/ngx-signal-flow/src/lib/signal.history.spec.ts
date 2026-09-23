@@ -155,4 +155,27 @@ describe('Signal History', () => {
     expect(history.undo()).toBe(secondInversePatches);
     expect(history.undo()).toEqual([]);
   });
+
+  it('keeps the newest entries after wrapping around the limit', () => {
+    const history = createPatchHistory(3);
+    const entries = Array.from({length: 7}, (_, index) => ({
+      patches: [{op: 'replace' as const, path: ['count'], value: index + 1}],
+      inversePatches: [{op: 'replace' as const, path: ['count'], value: index}],
+    }));
+    entries.forEach(({patches, inversePatches}) => history.addPatches(patches, inversePatches));
+
+    expect(history.undo()).toBe(entries[6].inversePatches);
+    expect(history.undo()).toBe(entries[5].inversePatches);
+
+    const replacement = {patches: [{op: 'replace' as const, path: ['count'], value: 42}], inversePatches: []};
+    history.addPatches(replacement.patches, replacement.inversePatches);
+
+    expect(history.canRedo()).toBe(false);
+    expect(history.undo()).toBe(replacement.inversePatches);
+    expect(history.undo()).toBe(entries[4].inversePatches);
+    expect(history.undo()).toEqual([]);
+    expect(history.redo()).toBe(entries[4].patches);
+    expect(history.redo()).toBe(replacement.patches);
+    expect(history.canRedo()).toBe(false);
+  });
 });

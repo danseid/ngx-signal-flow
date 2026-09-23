@@ -1,6 +1,8 @@
 import {computed, signal, untracked} from '@angular/core';
 import type {Signal} from '@angular/core';
 import {produce} from 'immer';
+import {assertFeatures} from './signal.features';
+import type {MapSetFeature} from './signal.features';
 
 export type BaseState<T> = T & {error?: Error};
 
@@ -122,7 +124,13 @@ export const createState = <T>(initialState: BaseState<T>) => {
   };
 };
 
-export const createCoreStore = <T>(initialState: BaseState<T>): CoreSignalStore<T> => {
+/**
+ * Create a store without RxJS, sources, effects or history
+ * @param initialState
+ * @param features Optional `withMapSet()` feature for Map and Set values
+ */
+export const createCoreStore = <T>(initialState: BaseState<T>, ...features: MapSetFeature[]): CoreSignalStore<T> => {
+  assertFeatures(features);
   const state = createState(initialState);
 
   return Object.assign(() => state.read(), {

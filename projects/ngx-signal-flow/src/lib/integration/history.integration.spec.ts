@@ -1,7 +1,8 @@
 import {ChangeDetectionStrategy, Component, inject} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
 import {createStore} from '../signal.store';
-import type {SignalStateOptions} from '../signal.store';
+import {withHistory} from '../signal.features';
+import type {StoreFeature} from '../signal.features';
 import {
   buttonOf,
   click,
@@ -15,7 +16,7 @@ import {
 describe('undo history integration', () => {
   beforeEach(() => configureIntegrationTestBed());
 
-  const renderNotes = (options?: SignalStateOptions) => {
+  const renderNotes = (...features: StoreFeature[]) => {
     @Component({
       changeDetection: ChangeDetectionStrategy.OnPush,
       template: `
@@ -29,7 +30,7 @@ describe('undo history integration', () => {
       `,
     })
     class OptionsNotesComponent {
-      readonly store = createStore<{notes: string[]}>({notes: []}, options);
+      readonly store = createStore<{notes: string[]}>({notes: []}, ...features);
       readonly add = this.store.source<string>();
       readonly notes = this.store.select('notes');
 
@@ -46,7 +47,7 @@ describe('undo history integration', () => {
   };
 
   it('undoes and redoes through the template within the history limit', async () => {
-    const fixture = await renderNotes({withPatches: true, historyLimit: 2});
+    const fixture = await renderNotes(withHistory({limit: 2}));
     expect(buttonOf(fixture, '.undo').disabled).toBe(true);
 
     ['first', 'second', 'third'].forEach((note) => fixture.componentInstance.add(note));
@@ -69,8 +70,8 @@ describe('undo history integration', () => {
     expect(buttonOf(fixture, '.redo').disabled).toBe(true);
   });
 
-  it('keeps unlimited history without a limit and ignores reducers that change nothing', async () => {
-    const fixture = await renderNotes({withPatches: true});
+  it('keeps history with the default limit and ignores reducers that change nothing', async () => {
+    const fixture = await renderNotes(withHistory());
     const notes = Array.from({length: 5}, (_, index) => `note ${index}`);
     notes.forEach((note) => fixture.componentInstance.add(note));
     fixture.componentInstance.add('note 4');
@@ -83,7 +84,7 @@ describe('undo history integration', () => {
   });
 
   it('keeps no history with a limit of zero', async () => {
-    const fixture = await renderNotes({withPatches: true, historyLimit: 0});
+    const fixture = await renderNotes(withHistory({limit: 0}));
 
     fixture.componentInstance.add('first');
     await fixture.whenStable();
@@ -105,7 +106,7 @@ describe('undo history integration', () => {
   });
 
   it('treats undo and redo as no-ops at the ends of the history', async () => {
-    const fixture = await renderNotes({withPatches: true});
+    const fixture = await renderNotes(withHistory());
     const emissions: unknown[] = [];
     fixture.componentInstance.store.asObservable().subscribe((state) => emissions.push(state));
 
@@ -131,7 +132,7 @@ describe('undo history integration', () => {
     })
     class ImportComponent {
       private readonly http = inject(HttpClient);
-      readonly store = createStore<{items: string[]}>({items: ['local']}, {withPatches: true});
+      readonly store = createStore<{items: string[]}>({items: ['local']}, withHistory());
       readonly importFrom = this.store.source<string>();
       readonly items = this.store.select('items');
 

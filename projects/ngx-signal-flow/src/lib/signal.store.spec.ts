@@ -1,5 +1,6 @@
 import {of, Subject, throwError} from 'rxjs';
 import {createStore} from './signal.store';
+import {withHistory, withMapSet} from './signal.features';
 import {createCoreStore} from './signal.core';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {Component, effect, Injector} from '@angular/core';
@@ -116,7 +117,7 @@ describe('State Store Test', () => {
   });
 
   it('should enable map and set for immerjs', async () => {
-    const store = createStore<TestState>({count: 0, total: 0, innerSet: new Set<number>()}, {withMapSet: true});
+    const store = createStore<TestState>({count: 0, total: 0, innerSet: new Set<number>()}, withMapSet());
     const source = store.source<number>(0);
     source.reduce((draft, value) => {
       draft.count = value;
@@ -349,7 +350,7 @@ describe('State Store Effects Test', () => {
     });
 
     it('does not subscribe the effect to the store on undo', () => {
-      const store = createStore({count: 0}, {withPatches: true});
+      const store = createStore({count: 0}, withHistory());
       store.reduce((draft) => {
         draft.count = 1;
       });

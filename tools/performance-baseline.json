@@ -8,8 +8,12 @@
   },
   "bundle": {
     "createStore": {
-      "minifiedBytes": 40000,
-      "gzipBytes": 14000
+      "minifiedBytes": 36000,
+      "gzipBytes": 12500
+    },
+    "createStoreWithFeatures": {
+      "minifiedBytes": 42000,
+      "gzipBytes": 14500
     },
     "createCoreStore": {
       "minifiedBytes": 12000,

@@ -1,5 +1,6 @@
 import {ChangeDetectionStrategy, Component} from '@angular/core';
 import {createStore} from '../signal.store';
+import {withHistory, withMapSet} from '../signal.features';
 import {click, configureIntegrationTestBed, renderComponent, textOf} from './integration.helpers';
 
 describe('Map and Set state integration', () => {
@@ -16,7 +17,7 @@ describe('Map and Set state integration', () => {
     `,
   })
   class SelectionComponent {
-    readonly store = createStore<{selected: Set<number>}>({selected: new Set()}, {withMapSet: true, withPatches: true});
+    readonly store = createStore<{selected: Set<number>}>({selected: new Set()}, withMapSet(), withHistory());
     readonly toggle = this.store.source<number>();
     readonly selection = this.store.compute('selected', (selected) => [...selected].sort().join(',') || 'none');
 
@@ -38,7 +39,7 @@ describe('Map and Set state integration', () => {
     `,
   })
   class QuantitiesComponent {
-    readonly store = createStore<{quantities: Map<string, number>}>({quantities: new Map()}, {withMapSet: true});
+    readonly store = createStore<{quantities: Map<string, number>}>({quantities: new Map()}, withMapSet());
     readonly add = this.store.source<string>();
     readonly summary = this.store.compute(
       'quantities',

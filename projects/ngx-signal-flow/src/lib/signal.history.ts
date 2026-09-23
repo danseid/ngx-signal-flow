@@ -13,46 +13,69 @@ type PatchEntry = {
   inversePatches: Patch[];
 };
 
+/**
+ * Keeps up to `limit` entries in a ring buffer, so adding an entry stays O(1) once the limit is reached.
+ */
 export const createPatchHistory = (limit = Number.POSITIVE_INFINITY): PatchHistory => {
-  const entries: PatchEntry[] = [];
-  const maximumEntries = Number.isFinite(limit) ? Math.max(0, Math.trunc(limit)) : Number.POSITIVE_INFINITY;
-  let index = -1;
+  const capacity = Number.isFinite(limit) ? Math.max(0, Math.trunc(limit)) : Number.POSITIVE_INFINITY;
+  const entries: (PatchEntry | undefined)[] = [];
+  let oldest = 0;
+  let size = 0;
+  let applied = 0;
+
+  const slot = (offset: number) => (oldest + offset) % capacity;
+
+  /**
+   * Slots for offsets below `size` always hold an entry.
+   */
+  const storedEntry = (offset: number) => entries[slot(offset)] as PatchEntry;
+
+  const discardRedoEntries = () => {
+    for (let offset = applied; offset < size; offset++) {
+      entries[slot(offset)] = undefined;
+    }
+    size = applied;
+  };
+
+  const discardOldestEntry = () => {
+    entries[oldest] = undefined;
+    oldest = slot(1);
+    size--;
+  };
 
   const addPatches = (patches: Patch[], inversePatches: Patch[]) => {
-    if (patches.length === 0 || maximumEntries === 0) {
+    if (patches.length === 0 || capacity === 0) {
       return;
     }
 
-    entries.length = index + 1;
-    entries.push({patches, inversePatches});
-
-    if (entries.length > maximumEntries) {
-      entries.splice(0, entries.length - maximumEntries);
+    discardRedoEntries();
+    if (size === capacity) {
+      discardOldestEntry();
     }
-
-    index = entries.length - 1;
+    entries[slot(size)] = {patches, inversePatches};
+    size++;
+    applied = size;
   };
 
-  const canUndo = () => {
-    return index >= 0;
-  };
+  const canUndo = () => applied > 0;
 
-  const canRedo = () => {
-    return index < entries.length - 1;
-  };
+  const canRedo = () => applied < size;
 
-  const undo = () => {
-    if (canUndo()) {
-      return entries[index--].inversePatches;
+  const undo = (): Patch[] => {
+    if (!canUndo()) {
+      return [];
     }
-    return [] as Patch[];
+    applied--;
+    return storedEntry(applied).inversePatches;
   };
 
-  const redo = () => {
-    if (canRedo()) {
-      return entries[++index].patches;
+  const redo = (): Patch[] => {
+    if (!canRedo()) {
+      return [];
     }
-    return [] as Patch[];
+    const {patches} = storedEntry(applied);
+    applied++;
+    return patches;
   };
 
   return {

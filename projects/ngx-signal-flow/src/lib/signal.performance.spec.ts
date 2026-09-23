@@ -1,5 +1,6 @@
 import {EMPTY, of} from 'rxjs';
 import {createStore} from './signal.store';
+import {withHistory} from './signal.features';
 import {createCoreStore} from './signal.core';
 
 describe('performance regressions', () => {
@@ -90,7 +91,7 @@ describe('performance regressions', () => {
   });
 
   it('does not create history for unchanged state', () => {
-    const store = createStore({count: 0}, {withPatches: true});
+    const store = createStore({count: 0}, withHistory());
 
     store.reduce(() => undefined);
 
@@ -98,7 +99,7 @@ describe('performance regressions', () => {
   });
 
   it('does not create history for effect results that change nothing', () => {
-    const store = createStore({count: 0}, {withPatches: true});
+    const store = createStore({count: 0}, withHistory());
     const source = store.source<number>();
     const effect = source.effect((value) => of(value));
     effect.reduce((draft, value) => {

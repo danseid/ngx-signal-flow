@@ -1,4 +1,6 @@
-import {applyPatches, enableMapSet, enablePatches, produce, produceWithPatches} from 'immer';
+import {signal} from '@angular/core';
+import type {Signal} from '@angular/core';
+import {applyPatches, produce, produceWithPatches} from 'immer';
 import type {Patch} from 'immer';
 import {BehaviorSubject, combineLatest, Subscription} from 'rxjs';
 import type {Observable, Subject} from 'rxjs';
@@ -6,18 +8,15 @@ import {createState} from './signal.core';
 import type {BaseState, CoreSignalStore} from './signal.core';
 import {createEffect, createStoreEffect} from './signal.effect';
 import type {Effect, StoreEffect} from './signal.effect';
+import {findHistoryFeature} from './signal.features';
+import type {StoreFeature} from './signal.features';
 import {createPatchHistory} from './signal.history';
+import type {PatchHistory} from './signal.history';
 import {createSource} from './signal.source';
-import type {ConnectOptions, Source} from './signal.source';
+import type {ConnectOptions, Source, SourceArguments} from './signal.source';
 
 export type {BaseState} from './signal.core';
-export type {ConnectOptions, Effect, Source, StoreEffect};
-
-export type SignalStateOptions = {
-  withPatches?: boolean;
-  withMapSet?: boolean;
-  historyLimit?: number;
-};
+export type {ConnectOptions, Effect, Source, SourceArguments, StoreEffect};
 
 export interface SignalStore<T> extends CoreSignalStore<T> {
   /**
@@ -57,11 +56,7 @@ export interface SignalStore<T> extends CoreSignalStore<T> {
    */
   reduce<S1>(s1: Source<T, S1>, fn: (draft: BaseState<T>, s1: S1) => void): Subscription;
 
-  reduce<S1, S2>(
-    s1: Source<T, S1>,
-    s2: Source<T, S2>,
-    fn: (draft: BaseState<T>, s1: S1, s2: S2) => void,
-  ): Subscription;
+  reduce<S1, S2>(s1: Source<T, S1>, s2: Source<T, S2>, fn: (draft: BaseState<T>, s1: S1, s2: S2) => void): Subscription;
 
   reduce<S1, S2, S3>(
     s1: Source<T, S1>,
@@ -247,24 +242,24 @@ export interface SignalStore<T> extends CoreSignalStore<T> {
   ): Effect<T, R>;
 
   /**
-   * Undo the last change
+   * Undo the last change. Needs the `withHistory()` feature.
    */
   undo(): void;
 
   /**
-   * Redo the last undone change
+   * Redo the last undone change. Needs the `withHistory()` feature.
    */
   redo(): void;
 
   /**
-   * Check if the store can undo the last change
+   * True when there is a change to undo. Always false without the `withHistory()` feature.
    */
-  canUndo(): boolean;
+  canUndo: Signal<boolean>;
 
   /**
-   * Check if the store can redo the last undone change
+   * True when there is an undone change to redo. Always false without the `withHistory()` feature.
    */
-  canRedo(): boolean;
+  canRedo: Signal<boolean>;
 
   /**
    * Stops every source, reducer and effect created through this store and completes its observable
@@ -300,16 +295,15 @@ const createOrderedPublisher = <T>(subject: Subject<T>) => {
 /**
  * Create a store with the given initial state
  * @param initialState
- * @param options
+ * @param features Optional features like `withHistory()` and `withMapSet()`
+ * @example
+ * const store = createStore({count: 0}, withHistory({limit: 50}));
  */
-export const createStore = <T>(initialState: BaseState<T>, options?: SignalStateOptions): SignalStore<T> => {
-  if (options?.withPatches) {
-    enablePatches();
-  }
-  if (options?.withMapSet) {
-    enableMapSet();
-  }
-  const history = options?.withPatches ? createPatchHistory(options.historyLimit) : undefined;
+export const createStore = <T>(initialState: BaseState<T>, ...features: StoreFeature[]): SignalStore<T> => {
+  const historyFeature = findHistoryFeature(features);
+  const history = historyFeature ? createPatchHistory(historyFeature.limit) : undefined;
+  const canUndo = signal(false);
+  const canRedo = signal(false);
   const state = createState(initialState);
   const changes = new BehaviorSubject(initialState);
   const changes$ = changes.asObservable();
@@ -320,6 +314,11 @@ export const createStore = <T>(initialState: BaseState<T>, options?: SignalState
     if (state.set(nextState)) {
       publish(nextState);
     }
+  };
+
+  const syncHistory = (patchHistory: PatchHistory) => {
+    canUndo.set(patchHistory.canUndo());
+    canRedo.set(patchHistory.canRedo());
   };
 
   const reduceState = (fn: (draft: BaseState<T>) => void) => {
@@ -333,10 +332,12 @@ export const createStore = <T>(initialState: BaseState<T>, options?: SignalState
       return;
     }
     history.addPatches(patches, inversePatches);
+    syncHistory(history);
     commit(nextState);
   };
 
-  const applyHistory = (patches: Patch[]) => {
+  const applyHistory = (patchHistory: PatchHistory, patches: Patch[]) => {
+    syncHistory(patchHistory);
     commit(applyPatches(state.current(), patches));
   };
 
@@ -374,16 +375,16 @@ export const createStore = <T>(initialState: BaseState<T>, options?: SignalState
     },
     undo: () => {
       if (history?.canUndo()) {
-        applyHistory(history.undo());
+        applyHistory(history, history.undo());
       }
     },
     redo: () => {
       if (history?.canRedo()) {
-        applyHistory(history.redo());
+        applyHistory(history, history.redo());
       }
     },
-    canUndo: () => history?.canUndo() ?? false,
-    canRedo: () => history?.canRedo() ?? false,
+    canUndo: canUndo.asReadonly(),
+    canRedo: canRedo.asReadonly(),
     destroy: () => {
       lifetime.unsubscribe();
       changes.complete();
