@@ -131,6 +131,33 @@ describe('Signal History', () => {
       expect(history.redo()).toEqual([]);
    });
 
+   it('should ignore empty patches', () => {
+      const history = createPatchHistory();
+      history.addPatches([], []);
+      expect(history.canUndo()).toBe(false);
+   });
+
+   it('should limit retained history', () => {
+      const history = createPatchHistory(2);
+      const [firstState, firstPatches, firstInversePatches] = produceWithPatches(baseState, draft => {
+         draft.count = 1;
+      });
+      const [secondState, secondPatches, secondInversePatches] = produceWithPatches(firstState, draft => {
+         draft.count = 2;
+      });
+      const [, thirdPatches, thirdInversePatches] = produceWithPatches(secondState, draft => {
+         draft.count = 3;
+      });
+
+      history.addPatches(firstPatches, firstInversePatches);
+      history.addPatches(secondPatches, secondInversePatches);
+      history.addPatches(thirdPatches, thirdInversePatches);
+
+      expect(history.undo()).toBe(thirdInversePatches);
+      expect(history.undo()).toBe(secondInversePatches);
+      expect(history.undo()).toEqual([]);
+   });
+
 
 
 });

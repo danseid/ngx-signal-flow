@@ -1,0 +1,19 @@
+{
+  "runtime": {
+    "noOpEmissions": 1,
+    "effectEmissionsForOneResult": 2,
+    "emptyPatchCreatesUndoStep": false,
+    "patchEmissionsAfterNoOp": 1,
+    "selectorRecomputationsAfterUnrelatedUpdate": 0
+  },
+  "bundle": {
+    "createStore": {
+      "minifiedBytes": 40000,
+      "gzipBytes": 14000
+    },
+    "createCoreStore": {
+      "minifiedBytes": 12000,
+      "gzipBytes": 5000
+    }
+  }
+}

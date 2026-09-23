@@ -12,7 +12,10 @@
     "build:lib": "ng build ngx-signal-flow --configuration=production",
     "postbuild:lib": "copyfiles README.md LICENSE dist/ngx-signal-flow",
     "release": "semantic-release",
-    "bundle-report": "ng build example --configuration production --source-map && source-map-explorer dist/example/browser/*.js"
+    "benchmark": "npm run performance",
+    "bundle-report": "npm run performance",
+    "performance": "npm run build:lib && node tools/performance.mjs",
+    "performance:check": "node tools/performance.mjs --check"
   },
   "private": true,
   "repository": {
@@ -40,6 +43,7 @@
     "@semantic-release/github": "^12.0.9",
     "@semantic-release/npm": "^13.1.5",
     "copyfiles": "^2.4.1",
+    "esbuild": "0.28.2",
     "jsdom": "^30.0.1",
     "ng-packagr": "^22.1.1",
     "npm": "file:tools/system-npm",

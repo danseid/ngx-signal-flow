@@ -1,6 +1,8 @@
-import {Signal, signal} from "@angular/core";
-import {Observable, Subscription} from "rxjs";
-import {SignalStore} from "./signal.store";
+import {signal} from "@angular/core";
+import type {Signal} from "@angular/core";
+import {finalize} from "rxjs";
+import type {Observable, Subscription} from "rxjs";
+import type {SignalStore} from "./signal.store";
 
 /**
  * An interface that represents an effect
@@ -16,19 +18,24 @@ export interface Effect<S, R> {
     * @param fn The function that modifies the state
     */
    reduce(fn: (draft: S, value: R) => void): void;
+
+   destroy(): void;
 }
 
 export const createStoreEffect = <S, R>(store: SignalStore<S>, effectFn: (value: S) => void): Effect<S, R> => {
    const loading = signal(false);
-   store.asObservable().subscribe((s) => {
+   const subscription = store.asObservable().subscribe((state) => {
       loading.set(true);
-      effectFn(s);
-      loading.set(false);
+      try {
+         effectFn(state);
+      } finally {
+         loading.set(false);
+      }
    });
    return {
       loading: loading.asReadonly(),
-      reduce: (fn: (draft: S, value: R) => void) => {
-      }
+      reduce: () => undefined,
+      destroy: () => subscription.unsubscribe()
    };
 }
 /**
@@ -45,34 +52,44 @@ export const createEffect = <S, T, R>(
    effectFn: (...value: T[]) => Observable<R>
 ): Effect<S, R> => {
    let effectSubscription: Subscription | undefined;
-   const errorReduce = (error?: Error) => {
-      store.reduce(draft => {
-         draft.error = error;
-      });
-      loading.set(false);
-   }
    const loading = signal(false);
    let reducer: ((draft: S, value: R) => void) | undefined;
 
-   source.subscribe((value: T) => {
+   const reduceError = (error: Error) => {
+      store.reduce(draft => {
+         draft.error = error;
+      });
+   };
+
+   const sourceSubscription = source.subscribe((value: T) => {
       effectSubscription?.unsubscribe();
       loading.set(true);
 
-      const effectObservable = Array.isArray(value)
-         ? effectFn(...value)
-         : effectFn(value);
+      let effectObservable: Observable<R>;
+      try {
+         effectObservable = Array.isArray(value)
+            ? effectFn(...value)
+            : effectFn(value);
+      } catch (error) {
+         reduceError(error instanceof Error ? error : new Error(String(error)));
+         loading.set(false);
+         return;
+      }
 
-      effectSubscription = effectObservable.subscribe({
+      effectSubscription = effectObservable.pipe(
+         finalize(() => loading.set(false))
+      ).subscribe({
          next: (result: R) => {
-            if (reducer) {
-               const reduceFn = reducer;
-               store.reduce(draft => {
-                  reduceFn(draft, result)
-               });
+            if (!reducer && store().error === undefined) {
+               return;
             }
-            errorReduce();
+
+            store.reduce(draft => {
+               reducer?.(draft, result);
+               draft.error = undefined;
+            });
          },
-         error: (error: Error) => errorReduce(error)
+         error: reduceError
       });
 
    });
@@ -81,6 +98,11 @@ export const createEffect = <S, T, R>(
       loading: loading.asReadonly(),
       reduce: (fn: (draft: S, value: R) => void) => {
          reducer = fn;
+      },
+      destroy: () => {
+         sourceSubscription.unsubscribe();
+         effectSubscription?.unsubscribe();
+         loading.set(false);
       }
    };
 }

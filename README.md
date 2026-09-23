@@ -107,6 +107,19 @@ import { createStore } from "ngx-signal-flow";
 const store = createStore<State>({ count: 0 });
 ```
 
+For stores that only need snapshots, reducers, selectors, and computed values, use `createCoreStore`. It leaves RxJS, sources, effects, and history out of the consumer bundle.
+
+```TypeScript
+import { createCoreStore } from "ngx-signal-flow";
+
+const store = createCoreStore<State>({ count: 0 });
+const count = store.select('count');
+
+store.reduce(draft => {
+  draft.count++;
+});
+```
+
 #### Store as Observable
 The store is an observable that emits the state whenever it changes. You can subscribe to the store to get the state.
 ```TypeScript
@@ -187,6 +200,15 @@ store.canRedo(); // false
 store.canUndo(); // true
 ```
 
+Use `historyLimit` to cap retained undo entries:
+
+```TypeScript
+const store = createStore<State>(
+  { count: 0 },
+  { withPatches: true, historyLimit: 100 }
+);
+```
+
 ### 📡 Sources
 
 Sources are signals that emit values to the store. Sources are created using the `store.source` method.
@@ -216,13 +238,15 @@ constructor() {
 To modify the state of the store, use the `source.reduce` method with a reducer function as an argument.
 The emitted value is passed as an argument to the reducer function.
 ```TypeScript
-source.reduce((draft: State, value: number) => {
+const reducerSubscription = source.reduce((draft: State, value: number) => {
   draft.count  = draft.count + value;
 });
+
+reducerSubscription.unsubscribe();
 ```
 #### Perform Side Effects - effect
 To perform side effects based on the values emitted by sources, use the `source.effect` method with an effect function as an argument.
-It must return an observable. Effect is lazy, it will only be executed when you actually use it to reduce the state.
+It must return an observable. The effect subscribes to its source when it is created.
 ```TypeScript
 source.effect((value: number) => {
   return http.get(`https://api.example.com/${value}`);
@@ -235,7 +259,7 @@ Effects are functions that perform side effects based on the values emitted by s
 To create an effect, see the example above.
 
 #### Perform Side Effects - reduce
-Since effects are lazy, you can use the `effect.reduce` method to subscribe to the effect and modify the state based on the data received from the effect.
+Use the `effect.reduce` method to modify state from values emitted by the effect.
 ```TypeScript
 source.effect.reduce((draft: State, data: any) => {
   // modify state based on the data received from the effect
@@ -256,6 +280,11 @@ store.effect(source1, source2, (value1, value2) => {
 #### Convenience State Parameters
 - loading: effect.loading - returns a boolean signal that indicates whether the effect is currently running
 - error: if error occurs, it will be written to state.error
+- teardown: call `effect.destroy()` or `source.destroy()` for dynamically created wiring
+
+## Performance checks
+
+Run `npm run performance` to build the library and report runtime probes plus minified and gzip bundle sizes. CI uses `npm run performance:check` to enforce deterministic behavior and bundle ceilings.
 
 ## 🚀 Releasing
 

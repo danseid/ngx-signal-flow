@@ -1,18 +1,26 @@
-import {computed, Signal, signal} from '@angular/core';
+import {signal} from '@angular/core';
+import type {Signal} from '@angular/core';
 import {applyPatches, enableMapSet, enablePatches, produce, produceWithPatches} from 'immer';
-import {ConnectOptions, createSource, Source} from "./signal.source";
-import {BehaviorSubject, combineLatest, Observable} from "rxjs";
-import {createPatchHistory, PatchHistory} from "./signal.history";
-import {createEffect, createStoreEffect, Effect} from "./signal.effect";
+import {createSource} from "./signal.source";
+import type {ConnectOptions, Source} from "./signal.source";
+import {BehaviorSubject, combineLatest} from "rxjs";
+import type {Observable, Subscription} from "rxjs";
+import {createPatchHistory} from "./signal.history";
+import type {PatchHistory} from "./signal.history";
+import {createEffect, createStoreEffect} from "./signal.effect";
+import type {Effect} from "./signal.effect";
+import {createSelectorRegistry} from "./signal.core";
+import type {BaseState} from "./signal.core";
 
+export {createCoreStore} from "./signal.core";
+export type {BaseState, CoreSignalStore} from "./signal.core";
 export type {ConnectOptions, Source};
 
-type SignalStateOptions = {
-   withPatches?: boolean; // Enable history with patches
-   withMapSet?: boolean; // Enable map and set for immer js
+export type SignalStateOptions = {
+   withPatches?: boolean;
+   withMapSet?: boolean;
+   historyLimit?: number;
 };
-
-export type BaseState<T> = T & { error?: Error };
 
 export interface SignalStore<T> {
    /**
@@ -57,23 +65,23 @@ export interface SignalStore<T> {
     *    draft.error = error;
     * });
     */
-   reduce<S1>(s1: Source<T, S1>, fn: ((draft: BaseState<T>, s1: S1) => void)): void;
+   reduce<S1>(s1: Source<T, S1>, fn: ((draft: BaseState<T>, s1: S1) => void)): Subscription;
 
-   reduce<S1, S2>(s1: Source<T, S1>, s2: Source<T, S2>, fn: ((draft: BaseState<T>, s1: S1, s2: S2) => void)): void;
+   reduce<S1, S2>(s1: Source<T, S1>, s2: Source<T, S2>, fn: ((draft: BaseState<T>, s1: S1, s2: S2) => void)): Subscription;
 
-   reduce<S1, S2, S3>(s1: Source<T, S1>, s2: Source<T, S2>, s3: Source<T, S3>, fn: ((draft: BaseState<T>, s1: S1, s2: S2, s3: S3) => void)): void;
+   reduce<S1, S2, S3>(s1: Source<T, S1>, s2: Source<T, S2>, s3: Source<T, S3>, fn: ((draft: BaseState<T>, s1: S1, s2: S2, s3: S3) => void)): Subscription;
 
-   reduce<S1, S2, S3, S4>(s1: Source<T, S1>, s2: Source<T, S2>, s3: Source<T, S3>, s4: Source<T, S4>, fn: ((draft: BaseState<T>, s1: S1, s2: S2, s3: S3, s4: S4) => void)): void;
+   reduce<S1, S2, S3, S4>(s1: Source<T, S1>, s2: Source<T, S2>, s3: Source<T, S3>, s4: Source<T, S4>, fn: ((draft: BaseState<T>, s1: S1, s2: S2, s3: S3, s4: S4) => void)): Subscription;
 
-   reduce<S1, S2, S3, S4, S5>(s1: Source<T, S1>, s2: Source<T, S2>, s3: Source<T, S3>, s4: Source<T, S4>, s5: Source<T, S5>, fn: ((draft: BaseState<T>, s1: S1, s2: S2, s3: S3, s4: S4, s5: S5) => void)): void;
+   reduce<S1, S2, S3, S4, S5>(s1: Source<T, S1>, s2: Source<T, S2>, s3: Source<T, S3>, s4: Source<T, S4>, s5: Source<T, S5>, fn: ((draft: BaseState<T>, s1: S1, s2: S2, s3: S3, s4: S4, s5: S5) => void)): Subscription;
 
-   reduce<S1, S2, S3, S4, S5, S6>(s1: Source<T, S1>, s2: Source<T, S2>, s3: Source<T, S3>, s4: Source<T, S4>, s5: Source<T, S5>, s6: Source<T, S6>, fn: ((draft: BaseState<T>, s1: S1, s2: S2, s3: S3, s4: S4, s5: S5, s6: S6) => void)): void;
+   reduce<S1, S2, S3, S4, S5, S6>(s1: Source<T, S1>, s2: Source<T, S2>, s3: Source<T, S3>, s4: Source<T, S4>, s5: Source<T, S5>, s6: Source<T, S6>, fn: ((draft: BaseState<T>, s1: S1, s2: S2, s3: S3, s4: S4, s5: S5, s6: S6) => void)): Subscription;
 
-   reduce<S1, S2, S3, S4, S5, S6, S7>(s1: Source<T, S1>, s2: Source<T, S2>, s3: Source<T, S3>, s4: Source<T, S4>, s5: Source<T, S5>, s6: Source<T, S6>, s7: Source<T, S7>, fn: ((draft: BaseState<T>, s1: S1, s2: S2, s3: S3, s4: S4, s5: S5, s6: S6, s7: S7) => void)): void;
+   reduce<S1, S2, S3, S4, S5, S6, S7>(s1: Source<T, S1>, s2: Source<T, S2>, s3: Source<T, S3>, s4: Source<T, S4>, s5: Source<T, S5>, s6: Source<T, S6>, s7: Source<T, S7>, fn: ((draft: BaseState<T>, s1: S1, s2: S2, s3: S3, s4: S4, s5: S5, s6: S6, s7: S7) => void)): Subscription;
 
-   reduce<S1, S2, S3, S4, S5, S6, S7, S8>(s1: Source<T, S1>, s2: Source<T, S2>, s3: Source<T, S3>, s4: Source<T, S4>, s5: Source<T, S5>, s6: Source<T, S6>, s7: Source<T, S7>, s8: Source<T, S8>, fn: ((draft: BaseState<T>, s1: S1, s2: S2, s3: S3, s4: S4, s5: S5, s6: S6, s7: S7, s8: S8) => void)): void;
+   reduce<S1, S2, S3, S4, S5, S6, S7, S8>(s1: Source<T, S1>, s2: Source<T, S2>, s3: Source<T, S3>, s4: Source<T, S4>, s5: Source<T, S5>, s6: Source<T, S6>, s7: Source<T, S7>, s8: Source<T, S8>, fn: ((draft: BaseState<T>, s1: S1, s2: S2, s3: S3, s4: S4, s5: S5, s6: S6, s7: S7, s8: S8) => void)): Subscription;
 
-   reduce<S1, S2, S3, S4, S5, S6, S7, S8, S9>(s1: Source<T, S1>, s2: Source<T, S2>, s3: Source<T, S3>, s4: Source<T, S4>, s5: Source<T, S5>, s6: Source<T, S6>, s7: Source<T, S7>, s8: Source<T, S8>, s9: Source<T, S9>, fn: ((draft: BaseState<T>, s1: S1, s2: S2, s3: S3, s4: S4, s5: S5, s6: S6, s7: S7, s8: S8, s9: S9) => void)): void;
+   reduce<S1, S2, S3, S4, S5, S6, S7, S8, S9>(s1: Source<T, S1>, s2: Source<T, S2>, s3: Source<T, S3>, s4: Source<T, S4>, s5: Source<T, S5>, s6: Source<T, S6>, s7: Source<T, S7>, s8: Source<T, S8>, s9: Source<T, S9>, fn: ((draft: BaseState<T>, s1: S1, s2: S2, s3: S3, s4: S4, s5: S5, s6: S6, s7: S7, s8: S8, s9: S9) => void)): Subscription;
 
    /**
     * Creates an effect. An effect is a way to interact with the store and execute side effects.
@@ -180,12 +188,25 @@ export interface SignalStore<T> {
    canRedo(): boolean;
 }
 
-const signalReducer = <T>(signal: BehaviorSubject<T>) => (fn: (draft: T) => void) => signal.next(produce(signal.value, fn))
-const signalReducerWithPatches = <T>(signal: BehaviorSubject<T>, history: PatchHistory) => (fn: (draft: T) => void) => {
-   const currentState = signal.value;
+const emitState = <T>(state: BehaviorSubject<T>, nextState: T) => {
+   if (Object.is(state.value, nextState)) {
+      return;
+   }
+   state.next(nextState);
+}
+
+const signalReducer = <T>(state: BehaviorSubject<T>) => (fn: (draft: T) => void) => {
+   emitState(state, produce(state.value, fn));
+}
+
+const signalReducerWithPatches = <T>(state: BehaviorSubject<T>, history: PatchHistory) => (fn: (draft: T) => void) => {
+   const currentState = state.value;
    const [nextState, patches, inversePatches] = produceWithPatches(currentState, fn);
+   if (patches.length === 0) {
+      return;
+   }
    history.addPatches(patches, inversePatches);
-   signal.next(nextState);
+   emitState(state, nextState);
 }
 
 /**
@@ -197,42 +218,45 @@ export const createStore = <T>(initialState: BaseState<T>, options?: SignalState
    let history: PatchHistory | undefined;
    if (options?.withPatches) {
       enablePatches();
-      history = createPatchHistory()
+      history = createPatchHistory(options.historyLimit)
    }
    if(options?.withMapSet) {
      enableMapSet();
    }
    const stateObservable = new BehaviorSubject(initialState);
    const state = signal(initialState);
-   stateObservable.subscribe(newState => state.set(newState));
+   const selectors = createSelectorRegistry(state);
+   stateObservable.subscribe(newState => {
+      state.set(newState);
+      selectors.update(newState);
+   });
+   const reduceState = signalReducer(stateObservable);
+   const reduceStateWithPatches = history ? signalReducerWithPatches(stateObservable, history) : undefined;
    const signalStore: SignalStore<T> = () => state();
    signalStore.asObservable = () => stateObservable;
-   // signalStore.reduce = signalReducer(state);
    signalStore.source = <S>(startValue?: S): Source<T, S> => createSource(signalStore, startValue);
-   signalStore.select = <K extends keyof BaseState<T>>(selector: K) => computed(() => state()[selector]);
+   signalStore.select = selectors.select;
    signalStore.compute = <R>(...args: any[]): Signal<R> => {
       const keys = args.slice(0, args.length - 1) as (keyof BaseState<T>)[];
       const fn = args[args.length - 1] as (...values: any[]) => R;
-      return computed(() => {
-         const values = keys.map((key) => state()[key]);
-         return fn(...values);
-      });
+      return selectors.compute(keys, fn);
    };
-   signalStore.reduce = (...args: any[]): void => {
-      // Extract the sources and the functions array
-      const sources: Source<any, any>[] = args.slice(0, args.length - 1);
-      const fns = args[args.length - 1];
-      if (sources.length === 0) {
-         if (options?.withPatches && history) {
-            signalReducerWithPatches(stateObservable, history)(fns);
+   signalStore.reduce = (...args: any[]): any => {
+      if (args.length === 1) {
+         const reducer = args[0];
+         if (reduceStateWithPatches) {
+            reduceStateWithPatches(reducer);
             return;
          }
-         signalReducer(stateObservable)(fns);
+         reduceState(reducer);
          return;
       }
-      combineLatest(sources.map(s => s.asObservable())).subscribe((value) => {
+
+      const sources: Source<any, any>[] = args.slice(0, -1);
+      const reducer = args[args.length - 1];
+      return combineLatest(sources.map(s => s.asObservable())).subscribe((value) => {
          signalStore.reduce((draft) => {
-            fns(draft, ...value);
+            reducer(draft, ...value);
          });
       });
 
@@ -251,14 +275,14 @@ export const createStore = <T>(initialState: BaseState<T>, options?: SignalState
    }
 
    signalStore.undo = () => {
-      if (history) {
+      if (history?.canUndo()) {
          const patches = history.undo();
          stateObservable.next(applyPatches(state(), patches));
       }
    }
 
    signalStore.redo = () => {
-      if (history) {
+      if (history?.canRedo()) {
          const patches = history.redo();
          stateObservable.next(applyPatches(state(), patches));
       }

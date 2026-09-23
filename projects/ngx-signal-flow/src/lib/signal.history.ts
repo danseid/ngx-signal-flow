@@ -1,4 +1,4 @@
-import {Patch} from "immer";
+import type {Patch} from "immer";
 
 export interface PatchHistory {
    canUndo(): boolean;
@@ -8,39 +8,49 @@ export interface PatchHistory {
    addPatches: (patch: Patch[], inversePatch: Patch[]) => void;
 }
 
-export const createPatchHistory = (): PatchHistory => {
-   let patches: Patch[][] = [];
-   let inversePatches: Patch[][] = [];
-   const index = {current: -1};
+type PatchEntry = {
+   patches: Patch[];
+   inversePatches: Patch[];
+}
 
-   const addPatches = (patch: Patch[], inversePatch: Patch[]) => {
-      patches = patches.slice(0, index.current + 1);
-      inversePatches = inversePatches.slice(0, index.current + 1);
-      patches.push(patch);
-      inversePatches.push(inversePatch);
-      index.current++;
+export const createPatchHistory = (limit = Number.POSITIVE_INFINITY): PatchHistory => {
+   const entries: PatchEntry[] = [];
+   const maximumEntries = Number.isFinite(limit) ? Math.max(0, Math.trunc(limit)) : Number.POSITIVE_INFINITY;
+   let index = -1;
+
+   const addPatches = (patches: Patch[], inversePatches: Patch[]) => {
+      if (patches.length === 0 || maximumEntries === 0) {
+         return;
+      }
+
+      entries.length = index + 1;
+      entries.push({patches, inversePatches});
+
+      if (entries.length > maximumEntries) {
+         entries.splice(0, entries.length - maximumEntries);
+      }
+
+      index = entries.length - 1;
    }
 
    const canUndo = () => {
-      return index.current >= 0;
+      return index >= 0;
    }
 
    const canRedo = () => {
-      return index.current < patches.length - 1;
+      return index < entries.length - 1;
    }
 
    const undo = () => {
       if(canUndo()) {
-         index.current--;
-         return inversePatches[index.current + 1];
+         return entries[index--].inversePatches;
       }
       return [] as Patch[];
    }
 
    const redo = () => {
       if(canRedo()) {
-         index.current++;
-         return patches[index.current];
+         return entries[++index].patches;
       }
       return [] as Patch[];
    }
