@@ -1,4 +1,4 @@
-import {computed, signal} from '@angular/core';
+import {computed, signal, untracked} from '@angular/core';
 import type {Signal, WritableSignal} from '@angular/core';
 import {produce} from 'immer';
 
@@ -58,7 +58,7 @@ export const createSelectorRegistry = <T>(state: Signal<BaseState<T>>) => {
          return existingEntry;
       }
 
-      const writable = signal(state()[key]);
+      const writable = signal(untracked(state)[key]);
       const entry = {
          readonly: writable.asReadonly(),
          writable
@@ -75,12 +75,7 @@ export const createSelectorRegistry = <T>(state: Signal<BaseState<T>>) => {
    };
 
    const update = (nextState: BaseState<T>) => {
-      entries.forEach((entry, key) => {
-         const nextValue = nextState[key];
-         if (!Object.is(entry.writable(), nextValue)) {
-            entry.writable.set(nextValue);
-         }
-      });
+      entries.forEach((entry, key) => entry.writable.set(nextState[key]));
    };
 
    return {
@@ -96,7 +91,7 @@ export const createCoreStore = <T>(initialState: BaseState<T>): CoreSignalStore<
    const store: CoreSignalStore<T> = () => state();
 
    store.reduce = fn => {
-      const currentState = state();
+      const currentState = untracked(state);
       const nextState = produce(currentState, fn);
       if (Object.is(currentState, nextState)) {
          return;

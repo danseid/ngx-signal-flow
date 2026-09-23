@@ -277,14 +277,14 @@ export const createStore = <T>(initialState: BaseState<T>, options?: SignalState
    signalStore.undo = () => {
       if (history?.canUndo()) {
          const patches = history.undo();
-         stateObservable.next(applyPatches(state(), patches));
+         stateObservable.next(applyPatches(stateObservable.value, patches));
       }
    }
 
    signalStore.redo = () => {
       if (history?.canRedo()) {
          const patches = history.redo();
-         stateObservable.next(applyPatches(state(), patches));
+         stateObservable.next(applyPatches(stateObservable.value, patches));
       }
    }
 

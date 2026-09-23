@@ -1,4 +1,4 @@
-import {signal} from "@angular/core";
+import {signal, untracked} from "@angular/core";
 import type {Signal} from "@angular/core";
 import {finalize} from "rxjs";
 import type {Observable, Subscription} from "rxjs";
@@ -61,6 +61,19 @@ export const createEffect = <S, T, R>(
       });
    };
 
+   const reduceResult = (result: R) => {
+      const hasError = untracked(store).error !== undefined;
+      if (reducer || hasError) {
+         store.reduce(draft => {
+            reducer?.(draft, result);
+            if (draft.error !== undefined) {
+               draft.error = undefined;
+            }
+         });
+      }
+      loading.set(false);
+   };
+
    const sourceSubscription = source.subscribe((value: T) => {
       effectSubscription?.unsubscribe();
       loading.set(true);
@@ -79,16 +92,7 @@ export const createEffect = <S, T, R>(
       effectSubscription = effectObservable.pipe(
          finalize(() => loading.set(false))
       ).subscribe({
-         next: (result: R) => {
-            if (!reducer && store().error === undefined) {
-               return;
-            }
-
-            store.reduce(draft => {
-               reducer?.(draft, result);
-               draft.error = undefined;
-            });
-         },
+         next: reduceResult,
          error: reduceError
       });
 

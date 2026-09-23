@@ -1,5 +1,6 @@
 import {EMPTY, of} from 'rxjs';
-import {createCoreStore, createStore} from './signal.store';
+import {createStore} from './signal.store';
+import {createCoreStore} from './signal.core';
 
 describe('performance regressions', () => {
    it('does not emit unchanged state', () => {
@@ -94,6 +95,22 @@ describe('performance regressions', () => {
       store.reduce(() => undefined);
 
       expect(store.canUndo()).toBe(false);
+   });
+
+   it('does not create history for effect results that change nothing', () => {
+      const store = createStore({count: 0}, {withPatches: true});
+      const source = store.source<number>();
+      const effect = source.effect(value => of(value));
+      effect.reduce((draft, value) => {
+         draft.count = value;
+      });
+
+      source(0);
+
+      expect(store.canUndo()).toBe(false);
+      expect('error' in store()).toBe(false);
+      effect.destroy();
+      source.destroy();
    });
 
    it('does not recompute selectors after unrelated changes', () => {

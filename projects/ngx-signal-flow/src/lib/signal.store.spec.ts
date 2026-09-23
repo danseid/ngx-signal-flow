@@ -1,7 +1,8 @@
 import {of, throwError} from 'rxjs';
 import {createStore} from './signal.store';
+import {createCoreStore} from './signal.core';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
-import {Component} from '@angular/core';
+import {Component, effect, Injector} from '@angular/core';
 import {Effect} from "./signal.effect";
 
 interface TestState {
@@ -235,6 +236,74 @@ describe('State Store Effects Test', () => {
 
       source2(3);
       expect(store().count).toBe(5);
+   });
+
+   describe('reducing inside an Angular effect', () => {
+      const runEffect = (reduce: () => void) => {
+         let runs = 0;
+         effect(() => {
+            runs++;
+            if (runs <= 3) {
+               reduce();
+            }
+         }, {injector: TestBed.inject(Injector)});
+         for (let flush = 0; flush < 3; flush++) {
+            TestBed.tick();
+         }
+         return runs;
+      };
+
+      it('does not subscribe the effect to selectors', () => {
+         const store = createStore({count: 0});
+         store.select('count')();
+
+         const runs = runEffect(() => store.reduce(draft => {
+            draft.count++;
+         }));
+
+         expect(runs).toBe(1);
+         expect(store().count).toBe(1);
+      });
+
+      it('does not subscribe the effect to the core store state', () => {
+         const store = createCoreStore({count: 0});
+         store.select('count')();
+
+         const runs = runEffect(() => store.reduce(draft => {
+            draft.count++;
+         }));
+
+         expect(runs).toBe(1);
+         expect(store().count).toBe(1);
+      });
+
+      it('does not subscribe the effect to the store on undo', () => {
+         const store = createStore({count: 0}, {withPatches: true});
+         store.reduce(draft => {
+            draft.count = 1;
+         });
+         store.reduce(draft => {
+            draft.count = 2;
+         });
+
+         const runs = runEffect(() => store.undo());
+
+         expect(runs).toBe(1);
+         expect(store().count).toBe(1);
+      });
+
+      it('does not subscribe the effect to the store while committing effect results', () => {
+         const store = createStore<{count: number, error?: Error}>({count: 0, error: new Error('previous')});
+         const source = store.source<number>();
+         const storeEffect = source.effect(value => of(value));
+
+         const runs = runEffect(() => source(1));
+
+         expect(runs).toBe(1);
+         expect(store().error).toBeUndefined();
+         storeEffect.destroy();
+         source.destroy();
+      });
    });
 
 })

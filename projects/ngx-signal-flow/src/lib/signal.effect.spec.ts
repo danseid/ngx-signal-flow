@@ -1,5 +1,5 @@
 import {createEffect} from "./signal.effect";
-import {from, map, throwError, timer} from "rxjs";
+import {from, map, Subject, throwError, timer} from "rxjs";
 import {createStore} from "./signal.store";
 
 describe('createEffect', () => {
@@ -36,6 +36,23 @@ describe('createEffect', () => {
       });
 
       expect(effect.loading()).toBe(false);
+    });
+
+    it('should be false after the first value of a long-lived observable', () => {
+      const store = createStore({ count: 0 });
+      const source = store.source<string>()
+      const results = new Subject<number>();
+      const effect = createEffect(store, source.asObservable(), (value: string) => results);
+      effect.reduce((draft, result) => {
+        draft.count = result;
+      });
+
+      source('test');
+      expect(effect.loading()).toBe(true);
+
+      results.next(1);
+      expect(effect.loading()).toBe(false);
+      expect(store().count).toBe(1);
     });
   });
 
