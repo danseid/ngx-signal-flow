@@ -1,13 +1,12 @@
-import {createEffect} from "./signal.effect";
-import {from, map, Subject, throwError, timer} from "rxjs";
-import {createStore} from "./signal.store";
+import {createEffect} from './signal.effect';
+import {from, map, Subject, throwError, timer} from 'rxjs';
+import {createStore} from './signal.store';
 
 describe('createEffect', () => {
-
   describe('Loading Signal', () => {
     it('should be false initially', () => {
-      const store = createStore({ count: 0 });
-      const source = store.source()
+      const store = createStore({count: 0});
+      const source = store.source();
       const effect = createEffect(store, source.asObservable(), (value) => from(['result']));
 
       expect(effect.loading()).toBe(false);
@@ -16,9 +15,11 @@ describe('createEffect', () => {
     it('should be true while an async effect is running', () => {
       vi.useFakeTimers();
       try {
-        const store = createStore({ count: 0 });
-        const source = store.source<string>()
-        const effect = createEffect(store, source.asObservable(), (value: string) => timer(100).pipe(map(() => 'result')));
+        const store = createStore({count: 0});
+        const source = store.source<string>();
+        const effect = createEffect(store, source.asObservable(), (value: string) =>
+          timer(100).pipe(map(() => 'result')),
+        );
 
         source('test');
         expect(effect.loading()).toBe(true);
@@ -31,8 +32,8 @@ describe('createEffect', () => {
     });
 
     it('should be false when effect completes', () => {
-      const store = createStore({ count: 0 });
-      const source = store.source<string>()
+      const store = createStore({count: 0});
+      const source = store.source<string>();
       const effect = createEffect(store, source.asObservable(), (value: string) => from(['result']));
 
       source('test');
@@ -44,8 +45,8 @@ describe('createEffect', () => {
     });
 
     it('should be false after the first value of a long-lived observable', () => {
-      const store = createStore({ count: 0 });
-      const source = store.source<string>()
+      const store = createStore({count: 0});
+      const source = store.source<string>();
       const results = new Subject<number>();
       const effect = createEffect(store, source.asObservable(), (value: string) => results);
       effect.reduce((draft, result) => {
@@ -63,8 +64,8 @@ describe('createEffect', () => {
 
   describe('State Reduction', () => {
     it('should reduce state correctly on successful effect', () => {
-      const store = createStore({ count: 0, result: '' });
-      const source = store.source<string>()
+      const store = createStore({count: 0, result: ''});
+      const source = store.source<string>();
       const effect = createEffect(store, source.asObservable(), (value: string) => from(['result']));
 
       effect.reduce((draft, result) => {
@@ -78,8 +79,8 @@ describe('createEffect', () => {
 
   describe('Error Handling', () => {
     it('should handle errors correctly', () => {
-      const store = createStore({ count: 0, result: '' });
-      const source = store.source<string>()
+      const store = createStore({count: 0, result: ''});
+      const source = store.source<string>();
       const effect = createEffect(store, source.asObservable(), (value: string) => throwError(new Error('test error')));
 
       source('test');
@@ -90,8 +91,8 @@ describe('createEffect', () => {
 
   describe('Multiple Effects', () => {
     it('should handle multiple effects in sequence', () => {
-      const store = createStore({ count: 0, result: '' });
-      const source = store.source<string>()
+      const store = createStore({count: 0, result: ''});
+      const source = store.source<string>();
       const effect = createEffect(store, source.asObservable(), (value: string) => from([value + '_result']));
 
       effect.reduce((draft, result) => {
@@ -106,10 +107,10 @@ describe('createEffect', () => {
     });
 
     it('should handle a mix of successful and failed effects', () => {
-      const store = createStore({ count: 0, result: '' });
-      const source = store.source<string>()
+      const store = createStore({count: 0, result: ''});
+      const source = store.source<string>();
       const effect = createEffect(store, source.asObservable(), (value: string) =>
-        value === 'fail' ? throwError(new Error('test error')) : from([value + '_result'])
+        value === 'fail' ? throwError(new Error('test error')) : from([value + '_result']),
       );
 
       effect.reduce((draft, result) => {
@@ -126,5 +127,4 @@ describe('createEffect', () => {
       expect(store().result).toBe('second_result');
     });
   });
-
 });

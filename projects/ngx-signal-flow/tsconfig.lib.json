@@ -8,11 +8,6 @@
     "inlineSources": true,
     "types": []
   },
-  "include": [
-    "src/**/*.ts"
-  ],
-  "exclude": [
-    "**/*.spec.ts",
-    "src/lib/integration/**"
-  ]
+  "include": ["src/**/*.ts"],
+  "exclude": ["**/*.spec.ts", "src/lib/integration/**"]
 }

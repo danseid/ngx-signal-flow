@@ -14,9 +14,7 @@
     "target": "ES2022",
     "module": "preserve",
     "paths": {
-      "ngx-signal-flow": [
-        "./dist/ngx-signal-flow"
-      ]
+      "ngx-signal-flow": ["./dist/ngx-signal-flow"]
     }
   },
   "angularCompilerOptions": {

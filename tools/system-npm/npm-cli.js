@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-import { spawn } from 'node:child_process';
-import { dirname, join } from 'node:path';
-import { execPath, platform } from 'node:process';
+import {spawn} from 'node:child_process';
+import {dirname, join} from 'node:path';
+import {execPath, platform} from 'node:process';
 
 const npm = join(dirname(execPath), platform === 'win32' ? 'npm.cmd' : 'npm');
 const child = spawn(npm, process.argv.slice(2), {

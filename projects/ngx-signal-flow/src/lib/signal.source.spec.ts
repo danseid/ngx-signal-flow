@@ -1,11 +1,10 @@
-import {Component, input, signal} from "@angular/core";
-import {ComponentFixture, TestBed} from "@angular/core/testing";
-import {from, Observable, throwError} from "rxjs";
-import {createStore} from "./signal.store";
-import {createSource} from "./signal.source";
+import {Component, input, signal} from '@angular/core';
+import {ComponentFixture, TestBed} from '@angular/core/testing';
+import {from, Observable, throwError} from 'rxjs';
+import {createStore} from './signal.store';
+import {createSource} from './signal.source';
 
 describe('createSource', () => {
-
   describe('Initialization', () => {
     it('should initialize without a start value', () => {
       const store = createStore({count: 0});
@@ -19,7 +18,7 @@ describe('createSource', () => {
       const source = createSource(store, 42);
 
       let emittedValue;
-      source.asObservable().subscribe(value => emittedValue = value);
+      source.asObservable().subscribe((value) => (emittedValue = value));
       expect(emittedValue).toBe(42);
     });
   });
@@ -30,7 +29,7 @@ describe('createSource', () => {
       const source = createSource(store);
 
       let emittedValue;
-      source.asObservable().subscribe(value => emittedValue = value);
+      source.asObservable().subscribe((value) => (emittedValue = value));
 
       source(100);
       expect(emittedValue).toBe(100);
@@ -41,7 +40,7 @@ describe('createSource', () => {
       const source = createSource(store);
 
       let emittedValue;
-      source.asObservable().subscribe(value => emittedValue = value);
+      source.asObservable().subscribe((value) => (emittedValue = value));
 
       source();
       expect(emittedValue).toBe(undefined);
@@ -70,7 +69,7 @@ describe('createSource', () => {
       const store = createStore({count: 0});
       const source = createSource(store, 0);
 
-      const effect = source.effect(value => from([value * 2]));
+      const effect = source.effect((value) => from([value * 2]));
       effect.reduce((draft, result) => {
         draft.count += result;
       });
@@ -86,7 +85,7 @@ describe('createSource', () => {
       const store = createStore({count: 0});
       const source = createSource(store, 0);
 
-      const effect = source.effect(value => value === 0 ? throwError(new Error('test error')) : from([value * 2]));
+      const effect = source.effect((value) => (value === 0 ? throwError(new Error('test error')) : from([value * 2])));
       effect.reduce((draft, result) => {
         draft.count += result;
       });
@@ -190,5 +189,4 @@ describe('createSource', () => {
       expect(undefinedFixture.componentInstance.store().count).toBe(3);
     });
   });
-
 });

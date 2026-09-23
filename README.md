@@ -31,8 +31,8 @@ ngx-signal-flow is a lightweight and efficient state management library designed
 
 ngx-signal-flow supports **Angular 19, 20, 21, and 22**.
 
-
 To install ngx-signal-flow, run the following command in your Angular project:
+
 ```Bash
 npm install ngx-signal-flow
 ```
@@ -42,6 +42,7 @@ npm install ngx-signal-flow
 Here’s a quick guide to get you started with ngx-signal-flow:
 
 ### 1. Define your state
+
 ```TypeScript
 type AppState = {
   count: number;
@@ -49,6 +50,7 @@ type AppState = {
 ```
 
 ### 2. Create your store, sources, reducers and selectors (signals)
+
 ```TypeScript
 import { Injectable } from '@angular/core';
 import { createStore } from "ngx-signal-flow";
@@ -80,6 +82,7 @@ export class AppStore {
 ```
 
 ### 3. Use the store in your components
+
 ```TypeScript
 import {Component, inject} from '@angular/core';
 import {AppStore} from './app.store';
@@ -101,17 +104,19 @@ export class AppComponent {
 
 ### 4. Enjoy reactive state management in your Angular application! 🎉
 
-This is just a basic example to get you started. You don't need to use a store class, you can als use the store directly in your components, 
+This is just a basic example to get you started. You don't need to use a store class, you can als use the store directly in your components,
 because it's functional no need to extend a class.
-
 
 ## 📚 Deep Dive
 
 ### 📦 Store
 
-The store is the central piece of ngx-signal-flow. It holds your state and provides methods to interact with it. 
+The store is the central piece of ngx-signal-flow. It holds your state and provides methods to interact with it.
+
 #### Creating a Store - createStore
+
 To create a store, use the `createStore` function with initial state as an argument.
+
 ```TypeScript
 import { createStore } from "ngx-signal-flow";
 
@@ -132,15 +137,20 @@ store.reduce(draft => {
 ```
 
 #### Store as Observable
+
 The store is an observable that emits the state whenever it changes. You can subscribe to the store to get the state.
+
 ```TypeScript
 store.asObservable().subscribe((state: State) => {
   // handle state changes
 });
 ```
+
 #### Selecting Store State - select
+
 To access the state of the store, use the `store.select` method with the key of the state as an argument.
 It returns an angular signal, that can be used in the template or in the component.
+
 ```TypeScript
 const count = store.select('count');
 
@@ -148,10 +158,12 @@ const count = store.select('count');
 {{ count() }}
 ```
 
-#### Selectin Store State - compute 
+#### Selectin Store State - compute
+
 To compute a value from the state of the store, use the `store.compute`. It takes a function that computes the value from the state as an argument.
 It returns an angular signal, that can be used in the template or in the component.
 You can also use multiple state values to compute a value.
+
 ```TypeScript
 const doubleCount = store.compute('count', (count: number) => count * 2);
 const fullName = store.compute('firstName', 'lastName', (firstName: string, lastName: string) => `${firstName} ${lastName}`);
@@ -162,12 +174,15 @@ const fullName = store.compute('firstName', 'lastName', (firstName: string, last
 ```
 
 #### Modify Store State - reduce
+
 To modify the state of the store, use the `store.reduce` method with a reducer function as an argument.
+
 ```TypeScript
 store.reduce((draft: State) => {
   draft.count  = draft.count + 1;
 });
 ```
+
 You call also use sources to modify the state
 
 ```TypeScript
@@ -182,8 +197,10 @@ store.reduce(source1, source2, (draft: State, val1: number, val2: string) => {
 ```
 
 #### Perform Side Effects - effect
+
 To perform side effects based on the state of the store, use the `store.effect` method with an effect function as an argument.
 It is not like other effects, it will be executed every time the state changes.
+
 ```TypeScript
 store.effect((state: State) => {
   console.log('State changed:', state);
@@ -191,8 +208,10 @@ store.effect((state: State) => {
 ```
 
 #### State History - undo, redo
+
 To undo or redo state changes, use the `store.undo` and `store.redo` methods.
 First initialize the store with the `createStore` function with the `withPatches` option set to `true`. Use the `store.undo` and `store.redo` methods to undo or redo state changes.
+
 ```TypeScript
 const store = createStore<State>({ count: 0 }, { withPatches: true });
 store.reduce((draft: State) => {
@@ -233,7 +252,9 @@ const source = store.source(0)
 // emit a value
 source(1)
 ```
+
 #### Connect a Signal or Input - connect
+
 Use `source.connect` to forward an Angular `input()` or any other signal into an existing source.
 `undefined` is skipped by default, so optional inputs can be wired without a manual `effect`.
 Call it in a constructor or another injection context.
@@ -245,9 +266,12 @@ constructor() {
   this.store.setCount.connect(this.value);
 }
 ```
+
 #### Modify Store State - reduce
+
 To modify the state of the store, use the `source.reduce` method with a reducer function as an argument.
 The emitted value is passed as an argument to the reducer function.
+
 ```TypeScript
 const reducerSubscription = source.reduce((draft: State, value: number) => {
   draft.count  = draft.count + value;
@@ -255,9 +279,12 @@ const reducerSubscription = source.reduce((draft: State, value: number) => {
 
 reducerSubscription.unsubscribe();
 ```
+
 #### Perform Side Effects - effect
+
 To perform side effects based on the values emitted by sources, use the `source.effect` method with an effect function as an argument.
 It must return an observable. The effect subscribes to its source when it is created.
+
 ```TypeScript
 source.effect((value: number) => {
   return http.get(`https://api.example.com/${value}`);
@@ -270,7 +297,9 @@ Effects are functions that perform side effects based on the values emitted by s
 To create an effect, see the example above.
 
 #### Perform Side Effects - reduce
+
 Use the `effect.reduce` method to modify state from values emitted by the effect.
+
 ```TypeScript
 source.effect.reduce((draft: State, data: any) => {
   // modify state based on the data received from the effect
@@ -278,7 +307,9 @@ source.effect.reduce((draft: State, data: any) => {
 ```
 
 #### Perform Side Effects - combine Sources
+
 You can combine multiple sources to create an effect that depends on multiple sources.
+
 ```TypeScript
 const source1 = store.source<number>(0);
 const source2 = store.source<string>('');
@@ -289,6 +320,7 @@ store.effect(source1, source2, (value1, value2) => {
 ```
 
 #### Convenience State Parameters
+
 - loading: effect.loading - returns a boolean signal that indicates whether the effect is currently running
 - error: if error occurs, it will be written to state.error
 - teardown: call `effect.destroy()` or `source.destroy()` for dynamically created wiring

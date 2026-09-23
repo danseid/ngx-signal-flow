@@ -1,212 +1,369 @@
 import {signal} from '@angular/core';
 import type {Signal} from '@angular/core';
 import {applyPatches, enableMapSet, enablePatches, produce, produceWithPatches} from 'immer';
-import {createSource} from "./signal.source";
-import type {ConnectOptions, Source} from "./signal.source";
-import {BehaviorSubject, combineLatest} from "rxjs";
-import type {Observable, Subscription} from "rxjs";
-import {createPatchHistory} from "./signal.history";
-import type {PatchHistory} from "./signal.history";
-import {createEffect, createStoreEffect} from "./signal.effect";
-import type {Effect} from "./signal.effect";
-import {createSelectorRegistry} from "./signal.core";
-import type {BaseState} from "./signal.core";
+import {createSource} from './signal.source';
+import type {ConnectOptions, Source} from './signal.source';
+import {BehaviorSubject, combineLatest} from 'rxjs';
+import type {Observable, Subscription} from 'rxjs';
+import {createPatchHistory} from './signal.history';
+import type {PatchHistory} from './signal.history';
+import {createEffect, createStoreEffect} from './signal.effect';
+import type {Effect} from './signal.effect';
+import {createSelectorRegistry} from './signal.core';
+import type {BaseState} from './signal.core';
 
-export type {BaseState} from "./signal.core";
+export type {BaseState} from './signal.core';
 export type {ConnectOptions, Source};
 
 export type SignalStateOptions = {
-   withPatches?: boolean;
-   withMapSet?: boolean;
-   historyLimit?: number;
+  withPatches?: boolean;
+  withMapSet?: boolean;
+  historyLimit?: number;
 };
 
 export interface SignalStore<T> {
-   /**
-    * Returns the snapshot of the store state
-    */
-   (): BaseState<T>;
+  /**
+   * Returns the snapshot of the store state
+   */
+  (): BaseState<T>;
 
+  /**
+   * Creates a new source. A source is a way to interact with the store
+   * @param startValue The optional start value of the source
+   * @returns The source
+   * @example
+   * const source = store.source(0);
+   * source.next(1);
+   * source.asObservable().subscribe(console.log); // 1
+   * source.reduce((draft, value) => {
+   * draft.count = value;
+   * });
+   *
+   */
+  source<S>(startValue?: S): Source<T, S>;
 
-   /**
-    * Creates a new source. A source is a way to interact with the store
-    * @param startValue The optional start value of the source
-    * @returns The source
-    * @example
-    * const source = store.source(0);
-    * source.next(1);
-    * source.asObservable().subscribe(console.log); // 1
-    * source.reduce((draft, value) => {
-    * draft.count = value;
-    * });
-    *
-    */
-   source<S>(startValue?: S): Source<T, S>;
+  asObservable(): Observable<BaseState<T>>;
 
-   asObservable(): Observable<BaseState<T>>;
+  /**
+   * Reduces the store state with the given function. This is the only way to modify the store state
+   * @param fn The function that modifies the state
+   * @example
+   * store.reduce((draft) => {
+   *  draft.count += 1;
+   *  draft.error = undefined;
+   *  });
+   */
+  reduce(fn: (draft: BaseState<T>) => void): void;
 
-   /**
-    * Reduces the store state with the given function. This is the only way to modify the store state
-    * @param fn The function that modifies the state
-    * @example
-    * store.reduce((draft) => {
-    *  draft.count += 1;
-    *  draft.error = undefined;
-    *  });
-    */
-   reduce(fn: (draft: BaseState<T>) => void): void;
+  /**
+   * Reduces the store state with the given function.
+   * @example
+   * store.reduce(countSource, errorSource, (draft, count, error) => {
+   *    draft.count = count;
+   *    draft.error = error;
+   * });
+   */
+  reduce<S1>(s1: Source<T, S1>, fn: (draft: BaseState<T>, s1: S1) => void): Subscription;
 
-   /**
-    * Reduces the store state with the given function.
-    * @example
-    * store.reduce(countSource, errorSource, (draft, count, error) => {
-    *    draft.count = count;
-    *    draft.error = error;
-    * });
-    */
-   reduce<S1>(s1: Source<T, S1>, fn: ((draft: BaseState<T>, s1: S1) => void)): Subscription;
+  reduce<S1, S2>(s1: Source<T, S1>, s2: Source<T, S2>, fn: (draft: BaseState<T>, s1: S1, s2: S2) => void): Subscription;
 
-   reduce<S1, S2>(s1: Source<T, S1>, s2: Source<T, S2>, fn: ((draft: BaseState<T>, s1: S1, s2: S2) => void)): Subscription;
+  reduce<S1, S2, S3>(
+    s1: Source<T, S1>,
+    s2: Source<T, S2>,
+    s3: Source<T, S3>,
+    fn: (draft: BaseState<T>, s1: S1, s2: S2, s3: S3) => void,
+  ): Subscription;
 
-   reduce<S1, S2, S3>(s1: Source<T, S1>, s2: Source<T, S2>, s3: Source<T, S3>, fn: ((draft: BaseState<T>, s1: S1, s2: S2, s3: S3) => void)): Subscription;
+  reduce<S1, S2, S3, S4>(
+    s1: Source<T, S1>,
+    s2: Source<T, S2>,
+    s3: Source<T, S3>,
+    s4: Source<T, S4>,
+    fn: (draft: BaseState<T>, s1: S1, s2: S2, s3: S3, s4: S4) => void,
+  ): Subscription;
 
-   reduce<S1, S2, S3, S4>(s1: Source<T, S1>, s2: Source<T, S2>, s3: Source<T, S3>, s4: Source<T, S4>, fn: ((draft: BaseState<T>, s1: S1, s2: S2, s3: S3, s4: S4) => void)): Subscription;
+  reduce<S1, S2, S3, S4, S5>(
+    s1: Source<T, S1>,
+    s2: Source<T, S2>,
+    s3: Source<T, S3>,
+    s4: Source<T, S4>,
+    s5: Source<T, S5>,
+    fn: (draft: BaseState<T>, s1: S1, s2: S2, s3: S3, s4: S4, s5: S5) => void,
+  ): Subscription;
 
-   reduce<S1, S2, S3, S4, S5>(s1: Source<T, S1>, s2: Source<T, S2>, s3: Source<T, S3>, s4: Source<T, S4>, s5: Source<T, S5>, fn: ((draft: BaseState<T>, s1: S1, s2: S2, s3: S3, s4: S4, s5: S5) => void)): Subscription;
+  reduce<S1, S2, S3, S4, S5, S6>(
+    s1: Source<T, S1>,
+    s2: Source<T, S2>,
+    s3: Source<T, S3>,
+    s4: Source<T, S4>,
+    s5: Source<T, S5>,
+    s6: Source<T, S6>,
+    fn: (draft: BaseState<T>, s1: S1, s2: S2, s3: S3, s4: S4, s5: S5, s6: S6) => void,
+  ): Subscription;
 
-   reduce<S1, S2, S3, S4, S5, S6>(s1: Source<T, S1>, s2: Source<T, S2>, s3: Source<T, S3>, s4: Source<T, S4>, s5: Source<T, S5>, s6: Source<T, S6>, fn: ((draft: BaseState<T>, s1: S1, s2: S2, s3: S3, s4: S4, s5: S5, s6: S6) => void)): Subscription;
+  reduce<S1, S2, S3, S4, S5, S6, S7>(
+    s1: Source<T, S1>,
+    s2: Source<T, S2>,
+    s3: Source<T, S3>,
+    s4: Source<T, S4>,
+    s5: Source<T, S5>,
+    s6: Source<T, S6>,
+    s7: Source<T, S7>,
+    fn: (draft: BaseState<T>, s1: S1, s2: S2, s3: S3, s4: S4, s5: S5, s6: S6, s7: S7) => void,
+  ): Subscription;
 
-   reduce<S1, S2, S3, S4, S5, S6, S7>(s1: Source<T, S1>, s2: Source<T, S2>, s3: Source<T, S3>, s4: Source<T, S4>, s5: Source<T, S5>, s6: Source<T, S6>, s7: Source<T, S7>, fn: ((draft: BaseState<T>, s1: S1, s2: S2, s3: S3, s4: S4, s5: S5, s6: S6, s7: S7) => void)): Subscription;
+  reduce<S1, S2, S3, S4, S5, S6, S7, S8>(
+    s1: Source<T, S1>,
+    s2: Source<T, S2>,
+    s3: Source<T, S3>,
+    s4: Source<T, S4>,
+    s5: Source<T, S5>,
+    s6: Source<T, S6>,
+    s7: Source<T, S7>,
+    s8: Source<T, S8>,
+    fn: (draft: BaseState<T>, s1: S1, s2: S2, s3: S3, s4: S4, s5: S5, s6: S6, s7: S7, s8: S8) => void,
+  ): Subscription;
 
-   reduce<S1, S2, S3, S4, S5, S6, S7, S8>(s1: Source<T, S1>, s2: Source<T, S2>, s3: Source<T, S3>, s4: Source<T, S4>, s5: Source<T, S5>, s6: Source<T, S6>, s7: Source<T, S7>, s8: Source<T, S8>, fn: ((draft: BaseState<T>, s1: S1, s2: S2, s3: S3, s4: S4, s5: S5, s6: S6, s7: S7, s8: S8) => void)): Subscription;
+  reduce<S1, S2, S3, S4, S5, S6, S7, S8, S9>(
+    s1: Source<T, S1>,
+    s2: Source<T, S2>,
+    s3: Source<T, S3>,
+    s4: Source<T, S4>,
+    s5: Source<T, S5>,
+    s6: Source<T, S6>,
+    s7: Source<T, S7>,
+    s8: Source<T, S8>,
+    s9: Source<T, S9>,
+    fn: (draft: BaseState<T>, s1: S1, s2: S2, s3: S3, s4: S4, s5: S5, s6: S6, s7: S7, s8: S8, s9: S9) => void,
+  ): Subscription;
 
-   reduce<S1, S2, S3, S4, S5, S6, S7, S8, S9>(s1: Source<T, S1>, s2: Source<T, S2>, s3: Source<T, S3>, s4: Source<T, S4>, s5: Source<T, S5>, s6: Source<T, S6>, s7: Source<T, S7>, s8: Source<T, S8>, s9: Source<T, S9>, fn: ((draft: BaseState<T>, s1: S1, s2: S2, s3: S3, s4: S4, s5: S5, s6: S6, s7: S7, s8: S8, s9: S9) => void)): Subscription;
+  /**
+   * Creates an effect. An effect is a way to interact with the store and execute side effects.
+   * @example
+   * const countEffect = store.effect(countSource, (value) => {
+   *  if (value === -1) {
+   *    return throwError(() => new Error('error'));
+   *  }
+   *  return of(value * 2);
+   * });
+   * countEffect.loading.subscribe(console.log); // true
+   */
 
-   /**
-    * Creates an effect. An effect is a way to interact with the store and execute side effects.
-    * @example
-    * const countEffect = store.effect(countSource, (value) => {
-    *  if (value === -1) {
-    *    return throwError(() => new Error('error'));
-    *  }
-    *  return of(value * 2);
-    * });
-    * countEffect.loading.subscribe(console.log); // true
-    */
+  effect<R>(effectFn: (value: BaseState<T>) => void): Effect<T, R>;
 
-   effect<R>(effectFn: (value: BaseState<T>) => void): Effect<T, R>;
+  effect<S1, R>(s1: Source<T, S1>, effectFn: (value: S1) => Observable<R>): Effect<T, R>;
 
-   effect<S1, R>(s1: Source<T, S1>, effectFn: (value: S1) => Observable<R>): Effect<T, R>;
+  effect<S1, S2, R>(
+    s1: Source<T, S1>,
+    s2: Source<T, S2>,
+    effectFn: (value1: S1, value2: S2) => Observable<R>,
+  ): Effect<T, R>;
 
-   effect<S1, S2, R>(s1: Source<T, S1>, s2: Source<T, S2>, effectFn: (value1: S1, value2: S2) => Observable<R>): Effect<T, R>;
+  effect<S1, S2, S3, R>(
+    s1: Source<T, S1>,
+    s2: Source<T, S2>,
+    s3: Source<T, S3>,
+    effectFn: (value1: S1, value2: S2, value3: S3) => Observable<R>,
+  ): Effect<T, R>;
 
-   effect<S1, S2, S3, R>(s1: Source<T, S1>, s2: Source<T, S2>, s3: Source<T, S3>, effectFn: (value1: S1, value2: S2, value3: S3) => Observable<R>): Effect<T, R>;
+  effect<S1, S2, S3, S4, R>(
+    s1: Source<T, S1>,
+    s2: Source<T, S2>,
+    s3: Source<T, S3>,
+    s4: Source<T, S4>,
+    effectFn: (value1: S1, value2: S2, value3: S3, value4: S4) => Observable<R>,
+  ): Effect<T, R>;
 
-   effect<S1, S2, S3, S4, R>(s1: Source<T, S1>, s2: Source<T, S2>, s3: Source<T, S3>, s4: Source<T, S4>, effectFn: (value1: S1, value2: S2, value3: S3, value4: S4) => Observable<R>): Effect<T, R>;
+  effect<S1, S2, S3, S4, S5, R>(
+    s1: Source<T, S1>,
+    s2: Source<T, S2>,
+    s3: Source<T, S3>,
+    s4: Source<T, S4>,
+    s5: Source<T, S5>,
+    effectFn: (value1: S1, value2: S2, value3: S3, value4: S4, value5: S5) => Observable<R>,
+  ): Effect<T, R>;
 
-   effect<S1, S2, S3, S4, S5, R>(s1: Source<T, S1>, s2: Source<T, S2>, s3: Source<T, S3>, s4: Source<T, S4>, s5: Source<T, S5>, effectFn: (value1: S1, value2: S2, value3: S3, value4: S4, value5: S5) => Observable<R>): Effect<T, R>;
+  effect<S1, S2, S3, S4, S5, S6, R>(
+    s1: Source<T, S1>,
+    s2: Source<T, S2>,
+    s3: Source<T, S3>,
+    s4: Source<T, S4>,
+    s5: Source<T, S5>,
+    s6: Source<T, S6>,
+    effectFn: (value1: S1, value2: S2, value3: S3, value4: S4, value5: S5, value6: S6) => Observable<R>,
+  ): Effect<T, R>;
 
-   effect<S1, S2, S3, S4, S5, S6, R>(s1: Source<T, S1>, s2: Source<T, S2>, s3: Source<T, S3>, s4: Source<T, S4>, s5: Source<T, S5>, s6: Source<T, S6>, effectFn: (value1: S1, value2: S2, value3: S3, value4: S4, value5: S5, value6: S6) => Observable<R>): Effect<T, R>;
+  effect<S1, S2, S3, S4, S5, S6, S7, R>(
+    s1: Source<T, S1>,
+    s2: Source<T, S2>,
+    s3: Source<T, S3>,
+    s4: Source<T, S4>,
+    s5: Source<T, S5>,
+    s6: Source<T, S6>,
+    s7: Source<T, S7>,
+    effectFn: (value1: S1, value2: S2, value3: S3, value4: S4, value5: S5, value6: S6, value7: S7) => Observable<R>,
+  ): Effect<T, R>;
 
-   effect<S1, S2, S3, S4, S5, S6, S7, R>(s1: Source<T, S1>, s2: Source<T, S2>, s3: Source<T, S3>, s4: Source<T, S4>, s5: Source<T, S5>, s6: Source<T, S6>, s7: Source<T, S7>, effectFn: (value1: S1, value2: S2, value3: S3, value4: S4, value5: S5, value6: S6, value7: S7) => Observable<R>): Effect<T, R>;
+  effect<S1, S2, S3, S4, S5, S6, S7, S8, R>(
+    s1: Source<T, S1>,
+    s2: Source<T, S2>,
+    s3: Source<T, S3>,
+    s4: Source<T, S4>,
+    s5: Source<T, S5>,
+    s6: Source<T, S6>,
+    s7: Source<T, S7>,
+    s8: Source<T, S8>,
+    effectFn: (
+      value1: S1,
+      value2: S2,
+      value3: S3,
+      value4: S4,
+      value5: S5,
+      value6: S6,
+      value7: S7,
+      value8: S8,
+    ) => Observable<R>,
+  ): Effect<T, R>;
 
-   effect<S1, S2, S3, S4, S5, S6, S7, S8, R>(s1: Source<T, S1>, s2: Source<T, S2>, s3: Source<T, S3>, s4: Source<T, S4>, s5: Source<T, S5>, s6: Source<T, S6>, s7: Source<T, S7>, s8: Source<T, S8>, effectFn: (value1: S1, value2: S2, value3: S3, value4: S4, value5: S5, value6: S6, value7: S7, value8: S8) => Observable<R>): Effect<T, R>;
+  effect<S1, S2, S3, S4, S5, S6, S7, S8, S9, R>(
+    s1: Source<T, S1>,
+    s2: Source<T, S2>,
+    s3: Source<T, S3>,
+    s4: Source<T, S4>,
+    s5: Source<T, S5>,
+    s6: Source<T, S6>,
+    s7: Source<T, S7>,
+    s8: Source<T, S8>,
+    s9: Source<T, S9>,
+    effectFn: (
+      value1: S1,
+      value2: S2,
+      value3: S3,
+      value4: S4,
+      value5: S5,
+      value6: S6,
+      value7: S7,
+      value8: S8,
+      value9: S9,
+    ) => Observable<R>,
+  ): Effect<T, R>;
 
-   effect<S1, S2, S3, S4, S5, S6, S7, S8, S9, R>(s1: Source<T, S1>, s2: Source<T, S2>, s3: Source<T, S3>, s4: Source<T, S4>, s5: Source<T, S5>, s6: Source<T, S6>, s7: Source<T, S7>, s8: Source<T, S8>, s9: Source<T, S9>, effectFn: (value1: S1, value2: S2, value3: S3, value4: S4, value5: S5, value6: S6, value7: S7, value8: S8, value9: S9) => Observable<R>): Effect<T, R>;
+  /**
+   * Selects a value from the state.
+   * @param selector The key of the value to select
+   * @returns A signal that emits the selected value
+   * @example
+   * const count = store.select('count');
+   * count.subscribe(console.log); // 0
+   */
+  select<K extends keyof BaseState<T>>(selector: K): Signal<BaseState<T>[K]>;
 
-   /**
-    * Selects a value from the state.
-    * @param selector The key of the value to select
-    * @returns A signal that emits the selected value
-    * @example
-    * const count = store.select('count');
-    * count.subscribe(console.log); // 0
-    */
-   select<K extends keyof BaseState<T>>(selector: K): Signal<BaseState<T>[K]>;
+  /**
+   * Computes a value from the state
+   * @param keys The keys of the values to compute
+   * @param fn The function that computes the value
+   * @returns A signal that emits the computed value
+   * @example
+   * const count = store.compute('count', 'error', (count, error) => ({ count, error }));
+   * count.subscribe(console.log); // { count: 0, error: undefined }
+   *
+   */
+  compute<K1 extends keyof BaseState<T>, R>(s1: K1, fn: (v1: BaseState<T>[K1]) => R): Signal<R>;
 
-   /**
-    * Computes a value from the state
-    * @param keys The keys of the values to compute
-    * @param fn The function that computes the value
-    * @returns A signal that emits the computed value
-    * @example
-    * const count = store.compute('count', 'error', (count, error) => ({ count, error }));
-    * count.subscribe(console.log); // { count: 0, error: undefined }
-    *
-    */
-   compute<K1 extends keyof BaseState<T>, R>(s1: K1, fn: (v1: BaseState<T>[K1]) => R): Signal<R>;
+  compute<K1 extends keyof BaseState<T>, K2 extends keyof BaseState<T>, R>(
+    s1: K1,
+    s2: K2,
+    fn: (v1: BaseState<T>[K1], v2: BaseState<T>[K2]) => R,
+  ): Signal<R>;
 
-   compute<K1 extends keyof BaseState<T>, K2 extends keyof BaseState<T>, R>(
-      s1: K1,
-      s2: K2,
-      fn: (v1: BaseState<T>[K1], v2: BaseState<T>[K2]) => R
-   ): Signal<R>;
+  compute<K1 extends keyof BaseState<T>, K2 extends keyof BaseState<T>, K3 extends keyof BaseState<T>, R>(
+    s1: K1,
+    s2: K2,
+    s3: K3,
+    fn: (v1: BaseState<T>[K1], v2: BaseState<T>[K2], v3: BaseState<T>[K3]) => R,
+  ): Signal<R>;
 
-   compute<K1 extends keyof BaseState<T>, K2 extends keyof BaseState<T>, K3 extends keyof BaseState<T>, R>(
-      s1: K1,
-      s2: K2,
-      s3: K3,
-      fn: (v1: BaseState<T>[K1], v2: BaseState<T>[K2], v3: BaseState<T>[K3]) => R
-   ): Signal<R>;
+  compute<
+    K1 extends keyof BaseState<T>,
+    K2 extends keyof BaseState<T>,
+    K3 extends keyof BaseState<T>,
+    K4 extends keyof BaseState<T>,
+    R,
+  >(
+    s1: K1,
+    s2: K2,
+    s3: K3,
+    s4: K4,
+    fn: (v1: BaseState<T>[K1], v2: BaseState<T>[K2], v3: BaseState<T>[K3], v4: BaseState<T>[K4]) => R,
+  ): Signal<R>;
 
-   compute<K1 extends keyof BaseState<T>, K2 extends keyof BaseState<T>, K3 extends keyof BaseState<T>, K4 extends keyof BaseState<T>, R>(
-      s1: K1,
-      s2: K2,
-      s3: K3,
-      s4: K4,
-      fn: (v1: BaseState<T>[K1], v2: BaseState<T>[K2], v3: BaseState<T>[K3], v4: BaseState<T>[K4]) => R
-   ): Signal<R>;
+  compute<
+    K1 extends keyof BaseState<T>,
+    K2 extends keyof BaseState<T>,
+    K3 extends keyof BaseState<T>,
+    K4 extends keyof BaseState<T>,
+    K5 extends keyof BaseState<T>,
+    R,
+  >(
+    s1: K1,
+    s2: K2,
+    s3: K3,
+    s4: K4,
+    s5: K5,
+    fn: (
+      v1: BaseState<T>[K1],
+      v2: BaseState<T>[K2],
+      v3: BaseState<T>[K3],
+      v4: BaseState<T>[K4],
+      v5: BaseState<T>[K5],
+    ) => R,
+  ): Signal<R>;
 
-   compute<K1 extends keyof BaseState<T>, K2 extends keyof BaseState<T>, K3 extends keyof BaseState<T>, K4 extends keyof BaseState<T>, K5 extends keyof BaseState<T>, R>(
-      s1: K1,
-      s2: K2,
-      s3: K3,
-      s4: K4,
-      s5: K5,
-      fn: (v1: BaseState<T>[K1], v2: BaseState<T>[K2], v3: BaseState<T>[K3], v4: BaseState<T>[K4], v5: BaseState<T>[K5]) => R
-   ): Signal<R>;
+  /**
+   * Undo the last change
+   */
+  undo(): void;
 
-   /**
-    * Undo the last change
-    */
-   undo(): void;
+  /**
+   * Redo the last change
+   */
+  redo(): void;
 
-   /**
-    * Redo the last change
-    */
-   redo(): void;
+  /**
+   * Check if the store can undo the last change
+   */
+  canUndo(): boolean;
 
-   /**
-    * Check if the store can undo the last change
-    */
-   canUndo(): boolean;
-
-   /**
-    * Check if the store can redo the last change
-    */
-   canRedo(): boolean;
+  /**
+   * Check if the store can redo the last change
+   */
+  canRedo(): boolean;
 }
 
 const emitState = <T>(state: BehaviorSubject<T>, nextState: T) => {
-   if (Object.is(state.value, nextState)) {
-      return;
-   }
-   state.next(nextState);
-}
+  if (Object.is(state.value, nextState)) {
+    return;
+  }
+  state.next(nextState);
+};
 
-const signalReducer = <T>(state: BehaviorSubject<T>) => (fn: (draft: T) => void) => {
-   emitState(state, produce(state.value, fn));
-}
+const signalReducer =
+  <T>(state: BehaviorSubject<T>) =>
+  (fn: (draft: T) => void) => {
+    emitState(state, produce(state.value, fn));
+  };
 
-const signalReducerWithPatches = <T>(state: BehaviorSubject<T>, history: PatchHistory) => (fn: (draft: T) => void) => {
-   const currentState = state.value;
-   const [nextState, patches, inversePatches] = produceWithPatches(currentState, fn);
-   if (patches.length === 0) {
+const signalReducerWithPatches =
+  <T>(state: BehaviorSubject<T>, history: PatchHistory) =>
+  (fn: (draft: T) => void) => {
+    const currentState = state.value;
+    const [nextState, patches, inversePatches] = produceWithPatches(currentState, fn);
+    if (patches.length === 0) {
       return;
-   }
-   history.addPatches(patches, inversePatches);
-   emitState(state, nextState);
-}
+    }
+    history.addPatches(patches, inversePatches);
+    emitState(state, nextState);
+  };
 
 /**
  * Create a store with the given initial state
@@ -214,81 +371,80 @@ const signalReducerWithPatches = <T>(state: BehaviorSubject<T>, history: PatchHi
  * @param options
  */
 export const createStore = <T>(initialState: BaseState<T>, options?: SignalStateOptions): SignalStore<T> => {
-   let history: PatchHistory | undefined;
-   if (options?.withPatches) {
-      enablePatches();
-      history = createPatchHistory(options.historyLimit)
-   }
-   if(options?.withMapSet) {
-     enableMapSet();
-   }
-   const stateObservable = new BehaviorSubject(initialState);
-   const state = signal(initialState);
-   const selectors = createSelectorRegistry(state);
-   stateObservable.subscribe(newState => {
-      state.set(newState);
-      selectors.update(newState);
-   });
-   const reduceState = signalReducer(stateObservable);
-   const reduceStateWithPatches = history ? signalReducerWithPatches(stateObservable, history) : undefined;
-   const signalStore: SignalStore<T> = () => state();
-   signalStore.asObservable = () => stateObservable;
-   signalStore.source = <S>(startValue?: S): Source<T, S> => createSource(signalStore, startValue);
-   signalStore.select = selectors.select;
-   signalStore.compute = <R>(...args: any[]): Signal<R> => {
-      const keys = args.slice(0, args.length - 1) as (keyof BaseState<T>)[];
-      const fn = args[args.length - 1] as (...values: any[]) => R;
-      return selectors.compute(keys, fn);
-   };
-   signalStore.reduce = (...args: any[]): any => {
-      if (args.length === 1) {
-         const reducer = args[0];
-         if (reduceStateWithPatches) {
-            reduceStateWithPatches(reducer);
-            return;
-         }
-         reduceState(reducer);
-         return;
+  let history: PatchHistory | undefined;
+  if (options?.withPatches) {
+    enablePatches();
+    history = createPatchHistory(options.historyLimit);
+  }
+  if (options?.withMapSet) {
+    enableMapSet();
+  }
+  const stateObservable = new BehaviorSubject(initialState);
+  const state = signal(initialState);
+  const selectors = createSelectorRegistry(state);
+  stateObservable.subscribe((newState) => {
+    state.set(newState);
+    selectors.update(newState);
+  });
+  const reduceState = signalReducer(stateObservable);
+  const reduceStateWithPatches = history ? signalReducerWithPatches(stateObservable, history) : undefined;
+  const signalStore: SignalStore<T> = () => state();
+  signalStore.asObservable = () => stateObservable;
+  signalStore.source = <S>(startValue?: S): Source<T, S> => createSource(signalStore, startValue);
+  signalStore.select = selectors.select;
+  signalStore.compute = <R>(...args: any[]): Signal<R> => {
+    const keys = args.slice(0, args.length - 1) as (keyof BaseState<T>)[];
+    const fn = args[args.length - 1] as (...values: any[]) => R;
+    return selectors.compute(keys, fn);
+  };
+  signalStore.reduce = (...args: any[]): any => {
+    if (args.length === 1) {
+      const reducer = args[0];
+      if (reduceStateWithPatches) {
+        reduceStateWithPatches(reducer);
+        return;
       }
+      reduceState(reducer);
+      return;
+    }
 
-      const sources: Source<any, any>[] = args.slice(0, -1);
-      const reducer = args[args.length - 1];
-      return combineLatest(sources.map(s => s.asObservable())).subscribe((value) => {
-         signalStore.reduce((draft) => {
-            reducer(draft, ...value);
-         });
+    const sources: Source<any, any>[] = args.slice(0, -1);
+    const reducer = args[args.length - 1];
+    return combineLatest(sources.map((s) => s.asObservable())).subscribe((value) => {
+      signalStore.reduce((draft) => {
+        reducer(draft, ...value);
       });
+    });
+  };
 
-   }
+  signalStore.effect = <R>(...args: any[]): Effect<T, R> => {
+    if (args.length === 1) {
+      const effectFn = args[0];
+      return createStoreEffect(signalStore, effectFn);
+    }
+    const sources: Source<any, any>[] = args.slice(0, args.length - 1);
+    const observables = sources.map((s) => s.asObservable());
+    const effectFn = args[args.length - 1];
+    const combinedSource = combineLatest(observables);
+    return createEffect(signalStore, combinedSource, effectFn);
+  };
 
-   signalStore.effect = <R>(...args: any[]): Effect<T, R> => {
-      if(args.length === 1) {
-         const effectFn = args[0];
-         return createStoreEffect(signalStore, effectFn);
-      }
-      const sources: Source<any, any>[] = args.slice(0, args.length - 1);
-      const observables = sources.map(s => s.asObservable());
-      const effectFn = args[args.length - 1];
-      const combinedSource = combineLatest(observables);
-      return createEffect(signalStore, combinedSource, effectFn);
-   }
+  signalStore.undo = () => {
+    if (history?.canUndo()) {
+      const patches = history.undo();
+      stateObservable.next(applyPatches(stateObservable.value, patches));
+    }
+  };
 
-   signalStore.undo = () => {
-      if (history?.canUndo()) {
-         const patches = history.undo();
-         stateObservable.next(applyPatches(stateObservable.value, patches));
-      }
-   }
+  signalStore.redo = () => {
+    if (history?.canRedo()) {
+      const patches = history.redo();
+      stateObservable.next(applyPatches(stateObservable.value, patches));
+    }
+  };
 
-   signalStore.redo = () => {
-      if (history?.canRedo()) {
-         const patches = history.redo();
-         stateObservable.next(applyPatches(stateObservable.value, patches));
-      }
-   }
+  signalStore.canUndo = () => (history ? history.canUndo() : false);
+  signalStore.canRedo = () => (history ? history.canRedo() : false);
 
-   signalStore.canUndo = () => history ? history.canUndo() : false;
-   signalStore.canRedo = () => history ? history.canRedo() : false;
-
-   return signalStore;
+  return signalStore;
 };

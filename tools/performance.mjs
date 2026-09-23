@@ -11,14 +11,14 @@ const workspaceDirectory = dirname(toolsDirectory);
 const bundlePath = join(workspaceDirectory, 'dist/ngx-signal-flow/fesm2022/ngx-signal-flow.mjs');
 const baselinePath = join(toolsDirectory, 'performance-baseline.json');
 
-const median = values => values.sort((left, right) => left - right)[Math.floor(values.length / 2)];
+const median = (values) => values.sort((left, right) => left - right)[Math.floor(values.length / 2)];
 
 const measureUpdates = (createStore, count, withPatches) => {
   const store = createStore({count: 0}, withPatches ? {withPatches: true} : undefined);
   const startedAt = performance.now();
 
   for (let index = 0; index < count; index++) {
-    store.reduce(draft => {
+    store.reduce((draft) => {
       draft.count++;
     });
   }
@@ -26,24 +26,25 @@ const measureUpdates = (createStore, count, withPatches) => {
   return performance.now() - startedAt;
 };
 
-const measureHistoryScaling = createStore => [1_000, 2_000, 4_000, 8_000].map(count => {
-  measureUpdates(createStore, count, false);
-  measureUpdates(createStore, count, true);
+const measureHistoryScaling = (createStore) =>
+  [1_000, 2_000, 4_000, 8_000].map((count) => {
+    measureUpdates(createStore, count, false);
+    measureUpdates(createStore, count, true);
 
-  const plainSamples = Array.from({length: 5}, () => measureUpdates(createStore, count, false));
-  const patchSamples = Array.from({length: 5}, () => measureUpdates(createStore, count, true));
-  const plainMilliseconds = median(plainSamples);
-  const patchMilliseconds = median(patchSamples);
+    const plainSamples = Array.from({length: 5}, () => measureUpdates(createStore, count, false));
+    const patchSamples = Array.from({length: 5}, () => measureUpdates(createStore, count, true));
+    const plainMilliseconds = median(plainSamples);
+    const patchMilliseconds = median(patchSamples);
 
-  return {
-    count,
-    plainMilliseconds: Number(plainMilliseconds.toFixed(2)),
-    patchMilliseconds: Number(patchMilliseconds.toFixed(2)),
-    patchToPlainRatio: Number((patchMilliseconds / plainMilliseconds).toFixed(2))
-  };
-});
+    return {
+      count,
+      plainMilliseconds: Number(plainMilliseconds.toFixed(2)),
+      patchMilliseconds: Number(patchMilliseconds.toFixed(2)),
+      patchToPlainRatio: Number((patchMilliseconds / plainMilliseconds).toFixed(2)),
+    };
+  });
 
-const measureRuntime = createStore => {
+const measureRuntime = (createStore) => {
   const noOpStore = createStore({count: 0});
   let noOpEmissions = 0;
   noOpStore.asObservable().subscribe(() => noOpEmissions++);
@@ -56,7 +57,7 @@ const measureRuntime = createStore => {
   let effectEmissionsForOneResult = 0;
   effectStore.asObservable().subscribe(() => effectEmissionsForOneResult++);
   const source = effectStore.source();
-  const effect = source.effect(value => of(value));
+  const effect = source.effect((value) => of(value));
   effect.reduce((draft, value) => {
     draft.count = value;
   });
@@ -69,16 +70,18 @@ const measureRuntime = createStore => {
 
   const selectorStore = createStore({selected: 0, unrelated: 0});
   let computeRuns = 0;
-  const selectors = Array.from({length: 100}, () => selectorStore.compute('selected', value => {
-    computeRuns++;
-    return value * 2;
-  }));
-  selectors.forEach(selector => selector());
+  const selectors = Array.from({length: 100}, () =>
+    selectorStore.compute('selected', (value) => {
+      computeRuns++;
+      return value * 2;
+    }),
+  );
+  selectors.forEach((selector) => selector());
   const runsBeforeUnrelatedUpdate = computeRuns;
-  selectorStore.reduce(draft => {
+  selectorStore.reduce((draft) => {
     draft.unrelated++;
   });
-  selectors.forEach(selector => selector());
+  selectors.forEach((selector) => selector());
 
   effect.destroy?.();
   source.destroy?.();
@@ -89,20 +92,20 @@ const measureRuntime = createStore => {
     emptyPatchCreatesUndoStep: patchStore.canUndo(),
     patchEmissionsAfterNoOp,
     selectorRecomputationsAfterUnrelatedUpdate: computeRuns - runsBeforeUnrelatedUpdate,
-    historyScaling: measureHistoryScaling(createStore)
+    historyScaling: measureHistoryScaling(createStore),
   };
 };
 
-const measureBundle = async exportName => {
+const measureBundle = async (exportName) => {
   const result = await build({
     stdin: {
       contents: `import {${exportName}} from './dist/ngx-signal-flow/fesm2022/ngx-signal-flow.mjs'; globalThis.__ngxSignalFlow = ${exportName};`,
       resolveDir: workspaceDirectory,
-      sourcefile: `${exportName}.mjs`
+      sourcefile: `${exportName}.mjs`,
     },
     bundle: true,
     define: {
-      'process.env.NODE_ENV': '"production"'
+      'process.env.NODE_ENV': '"production"',
     },
     external: ['@angular/core', '@angular/core/*'],
     format: 'esm',
@@ -110,13 +113,13 @@ const measureBundle = async exportName => {
     minify: true,
     platform: 'browser',
     treeShaking: true,
-    write: false
+    write: false,
   });
   const output = result.outputFiles[0].contents;
 
   return {
     minifiedBytes: output.byteLength,
-    gzipBytes: gzipSync(output).byteLength
+    gzipBytes: gzipSync(output).byteLength,
   };
 };
 
@@ -148,7 +151,7 @@ const checkBaseline = (report, baseline) => {
 
 const library = await import(`${pathToFileURL(bundlePath).href}?performance=${Date.now()}`);
 const bundle = {
-  createStore: await measureBundle('createStore')
+  createStore: await measureBundle('createStore'),
 };
 
 if (library.createCoreStore) {
@@ -157,7 +160,7 @@ if (library.createCoreStore) {
 
 const report = {
   runtime: measureRuntime(library.createStore),
-  bundle
+  bundle,
 };
 
 console.log(JSON.stringify(report, null, 2));
