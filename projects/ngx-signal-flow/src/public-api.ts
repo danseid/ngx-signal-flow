@@ -3,3 +3,5 @@
  */
 
 export * from './lib/signal.store';
+export {createCoreStore} from './lib/signal.core';
+export type {CoreSignalStore} from './lib/signal.core';

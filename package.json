@@ -12,8 +12,6 @@
     "build:lib": "ng build ngx-signal-flow --configuration=production",
     "postbuild:lib": "copyfiles README.md LICENSE dist/ngx-signal-flow",
     "release": "semantic-release",
-    "benchmark": "npm run performance",
-    "bundle-report": "npm run performance",
     "performance": "npm run build:lib && node tools/performance.mjs",
     "performance:check": "node tools/performance.mjs --check"
   },

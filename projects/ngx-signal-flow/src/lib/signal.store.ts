@@ -12,8 +12,7 @@ import type {Effect} from "./signal.effect";
 import {createSelectorRegistry} from "./signal.core";
 import type {BaseState} from "./signal.core";
 
-export {createCoreStore} from "./signal.core";
-export type {BaseState, CoreSignalStore} from "./signal.core";
+export type {BaseState} from "./signal.core";
 export type {ConnectOptions, Source};
 
 export type SignalStateOptions = {
