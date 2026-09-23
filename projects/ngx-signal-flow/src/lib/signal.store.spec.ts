@@ -3,7 +3,6 @@ import {createStore} from './signal.store';
 import {createCoreStore} from './signal.core';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {Component, effect, Injector} from '@angular/core';
-import {Effect} from './signal.effect';
 
 interface TestState {
   count: number;
@@ -185,8 +184,7 @@ describe('State Store Effects Test', () => {
     });
     await new Promise<void>((resolve, reject) => {
       let round = 0;
-      let eff: Effect<TestState, unknown>;
-      eff = store.effect((state) => {
+      store.effect((state) => {
         try {
           switch (round) {
             case 0:
@@ -196,12 +194,10 @@ describe('State Store Effects Test', () => {
             case 1:
               expect(state.count).toBe(2);
               expect(state.total).toBe(1);
-              expect(eff.loading()).toBe(true);
               break;
             case 2:
               expect(state.count).toBe(4);
               expect(state.total).toBe(2);
-              expect(eff.loading()).toBe(true);
               resolve();
               break;
             default:
@@ -368,9 +364,10 @@ describe('State Store Effects Test', () => {
     });
 
     it('does not subscribe the effect to the store while committing effect results', () => {
-      const store = createStore<{count: number; error?: Error}>({count: 0, error: new Error('previous')});
+      const store = createStore({count: 0});
       const source = store.source<number>();
-      const storeEffect = source.effect((value) => of(value));
+      const storeEffect = source.effect((value) => (value < 0 ? throwError(() => new Error('previous')) : of(value)));
+      source(-1);
 
       const runs = runEffect(() => source(1));
 

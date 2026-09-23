@@ -5,13 +5,13 @@ import type {Observable, Subject} from 'rxjs';
 import {createState} from './signal.core';
 import type {BaseState, CoreSignalStore} from './signal.core';
 import {createEffect, createStoreEffect} from './signal.effect';
-import type {Effect} from './signal.effect';
+import type {Effect, StoreEffect} from './signal.effect';
 import {createPatchHistory} from './signal.history';
 import {createSource} from './signal.source';
 import type {ConnectOptions, Source} from './signal.source';
 
 export type {BaseState} from './signal.core';
-export type {ConnectOptions, Source};
+export type {ConnectOptions, Effect, Source, StoreEffect};
 
 export type SignalStateOptions = {
   withPatches?: boolean;
@@ -138,7 +138,7 @@ export interface SignalStore<T> extends CoreSignalStore<T> {
    * @example
    * store.effect(state => console.log('State changed:', state));
    */
-  effect<R>(effectFn: (value: BaseState<T>) => void): Effect<T, R>;
+  effect(effectFn: (value: BaseState<T>) => void): StoreEffect;
 
   /**
    * Runs an observable side effect for the latest values of all sources. A new value cancels the previous run.
@@ -363,7 +363,7 @@ export const createStore = <T>(initialState: BaseState<T>, options?: SignalState
       lifetime.add(subscription);
       return subscription;
     },
-    effect: <R>(...args: unknown[]): Effect<T, R> => {
+    effect: <R>(...args: unknown[]): Effect<T, R> | StoreEffect => {
       if (args.length === 1) {
         return createStoreEffect(store, args[0] as (value: BaseState<T>) => void, lifetime);
       }

@@ -16,6 +16,7 @@ describe('store-level effect integration', () => {
     readonly rename = this.store.source<string>();
     readonly name = this.store.select('name');
     readonly persist = this.store.effect((state) => this.storage.saved.push(state.name));
+    readonly destroy = this.store.destroy;
 
     constructor() {
       this.rename.reduce((draft, name) => {
@@ -49,13 +50,15 @@ describe('store-level effect integration', () => {
     expect(storage.saved).toEqual(['Ada', 'Grace']);
   });
 
-  it('is not loading after the observer has run', async () => {
+  it('stops observing when the store is destroyed', async () => {
+    const storage = TestBed.inject(DraftStorage);
     const fixture = await renderComponent(ProfileComponent);
     const profile = fixture.componentInstance.profile;
 
-    profile.rename('Grace');
+    profile.destroy();
+    profile.rename('Linus');
 
-    expect(profile.persist.loading()).toBe(false);
+    expect(storage.saved).toEqual(['Ada']);
   });
 
   it('stops observing when the owning component is destroyed', async () => {

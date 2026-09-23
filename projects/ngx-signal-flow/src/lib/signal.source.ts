@@ -1,6 +1,6 @@
 import type {Injector, Signal} from '@angular/core';
 import {toObservable} from '@angular/core/rxjs-interop';
-import {BehaviorSubject, filter, Subject, Subscription} from 'rxjs';
+import {BehaviorSubject, filter, map, Subject, Subscription} from 'rxjs';
 import type {Observable} from 'rxjs';
 import {createEffect} from './signal.effect';
 import type {Effect} from './signal.effect';
@@ -57,7 +57,8 @@ export const createSource = <T, S>(store: SignalStore<T>, startValue?: S, lifeti
     return subscription;
   };
   source.effect = <R>(effectFn: (value: S) => Observable<R>): Effect<T, R> => {
-    return createEffect(store, source.asObservable(), effectFn, subscriptions);
+    const values$ = subject.pipe(map((value): [S] => [value]));
+    return createEffect(store, values$, effectFn, subscriptions);
   };
   source.connect = (inputSignal: Signal<S | undefined>, options?: ConnectOptions) => {
     const skipUndefined = options?.skipUndefined !== false;
