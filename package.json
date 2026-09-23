@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
+    "prestart": "npm run build:lib",
     "start": "ng serve example",
     "build": "ng build ngx-signal-flow",
     "watch": "ng build ngx-signal-flow --watch --configuration development",
@@ -30,7 +31,6 @@
     "@angular/compiler": "^22.1.2",
     "@angular/core": "^22.1.2",
     "@angular/platform-browser": "^22.1.2",
-    "@angular/router": "^22.1.2",
     "immer": "^11.1.17",
     "rxjs": "~7.8.2",
     "tslib": "^2.8.1",
