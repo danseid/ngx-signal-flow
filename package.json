@@ -14,7 +14,7 @@
     "format:check": "prettier --check .",
     "audit": "npm audit",
     "build:lib": "ng build ngx-signal-flow --configuration=production",
-    "postbuild:lib": "copyfiles README.md LICENSE dist/ngx-signal-flow",
+    "postbuild:lib": "node -e \"for (const file of ['README.md', 'LICENSE']) require('node:fs').copyFileSync(file, 'dist/ngx-signal-flow/' + file)\"",
     "release": "semantic-release",
     "performance": "npm run build:lib && node tools/performance.mjs",
     "performance:check": "node tools/performance.mjs --check"
@@ -46,7 +46,6 @@
     "@semantic-release/github": "^12.0.9",
     "@semantic-release/npm": "^13.1.5",
     "@vitest/coverage-v8": "^4.1.11",
-    "copyfiles": "^2.4.1",
     "esbuild": "0.28.2",
     "eslint": "^10.11.0",
     "eslint-config-prettier": "^10.1.8",

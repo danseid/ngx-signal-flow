@@ -6,8 +6,7 @@
   "description": "Simple Signal Store library for Angular",
   "peerDependencies": {
     "@angular/core": ">=19.0.0 <23.0.0",
-    "@angular/common": ">=19.0.0 <23.0.0",
-    "rxjs": "^6.5.3 || ^7.4.0",
+    "rxjs": "^7.5.5",
     "immer": "^10.1.1 || ^11.0.0"
   },
   "dependencies": {
