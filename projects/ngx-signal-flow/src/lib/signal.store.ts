@@ -1,16 +1,14 @@
-import {signal} from '@angular/core';
-import type {Signal} from '@angular/core';
 import {applyPatches, enableMapSet, enablePatches, produce, produceWithPatches} from 'immer';
-import {createSource} from './signal.source';
-import type {ConnectOptions, Source} from './signal.source';
-import {BehaviorSubject, combineLatest} from 'rxjs';
-import type {Observable, Subscription} from 'rxjs';
-import {createPatchHistory} from './signal.history';
-import type {PatchHistory} from './signal.history';
+import type {Patch} from 'immer';
+import {BehaviorSubject, combineLatest, Subscription} from 'rxjs';
+import type {Observable, Subject} from 'rxjs';
+import {createState} from './signal.core';
+import type {BaseState, CoreSignalStore} from './signal.core';
 import {createEffect, createStoreEffect} from './signal.effect';
 import type {Effect} from './signal.effect';
-import {createSelectorRegistry} from './signal.core';
-import type {BaseState} from './signal.core';
+import {createPatchHistory} from './signal.history';
+import {createSource} from './signal.source';
+import type {ConnectOptions, Source} from './signal.source';
 
 export type {BaseState} from './signal.core';
 export type {ConnectOptions, Source};
@@ -21,51 +19,49 @@ export type SignalStateOptions = {
   historyLimit?: number;
 };
 
-export interface SignalStore<T> {
-  /**
-   * Returns the snapshot of the store state
-   */
-  (): BaseState<T>;
-
+export interface SignalStore<T> extends CoreSignalStore<T> {
   /**
    * Creates a new source. A source is a way to interact with the store
    * @param startValue The optional start value of the source
    * @returns The source
    * @example
    * const source = store.source(0);
-   * source.next(1);
-   * source.asObservable().subscribe(console.log); // 1
    * source.reduce((draft, value) => {
-   * draft.count = value;
+   *   draft.count = value;
    * });
-   *
+   * source(1);
    */
   source<S>(startValue?: S): Source<T, S>;
 
+  /**
+   * Emits the current state and every later change, in the order the changes happened
+   */
   asObservable(): Observable<BaseState<T>>;
 
   /**
-   * Reduces the store state with the given function. This is the only way to modify the store state
-   * @param fn The function that modifies the state
+   * Updates the state with an Immer recipe. Unchanged drafts do not notify anyone.
    * @example
-   * store.reduce((draft) => {
-   *  draft.count += 1;
-   *  draft.error = undefined;
-   *  });
+   * store.reduce(draft => {
+   *   draft.count += 1;
+   * });
    */
   reduce(fn: (draft: BaseState<T>) => void): void;
 
   /**
-   * Reduces the store state with the given function.
+   * Reduces the latest values of all sources into the state once every source has emitted.
    * @example
-   * store.reduce(countSource, errorSource, (draft, count, error) => {
-   *    draft.count = count;
-   *    draft.error = error;
+   * store.reduce(countSource, nameSource, (draft, count, name) => {
+   *   draft.count = count;
+   *   draft.name = name;
    * });
    */
   reduce<S1>(s1: Source<T, S1>, fn: (draft: BaseState<T>, s1: S1) => void): Subscription;
 
-  reduce<S1, S2>(s1: Source<T, S1>, s2: Source<T, S2>, fn: (draft: BaseState<T>, s1: S1, s2: S2) => void): Subscription;
+  reduce<S1, S2>(
+    s1: Source<T, S1>,
+    s2: Source<T, S2>,
+    fn: (draft: BaseState<T>, s1: S1, s2: S2) => void,
+  ): Subscription;
 
   reduce<S1, S2, S3>(
     s1: Source<T, S1>,
@@ -138,19 +134,21 @@ export interface SignalStore<T> {
   ): Subscription;
 
   /**
-   * Creates an effect. An effect is a way to interact with the store and execute side effects.
+   * Runs a function with the current state and again after every change
    * @example
-   * const countEffect = store.effect(countSource, (value) => {
-   *  if (value === -1) {
-   *    return throwError(() => new Error('error'));
-   *  }
-   *  return of(value * 2);
-   * });
-   * countEffect.loading.subscribe(console.log); // true
+   * store.effect(state => console.log('State changed:', state));
    */
-
   effect<R>(effectFn: (value: BaseState<T>) => void): Effect<T, R>;
 
+  /**
+   * Runs an observable side effect for the latest values of all sources. A new value cancels the previous run.
+   * @example
+   * const loadEffect = store.effect(idSource, id => http.get(`/items/${id}`));
+   * loadEffect.reduce((draft, item) => {
+   *   draft.item = item;
+   * });
+   * loadEffect.loading(); // true while the request is running
+   */
   effect<S1, R>(s1: Source<T, S1>, effectFn: (value: S1) => Observable<R>): Effect<T, R>;
 
   effect<S1, S2, R>(
@@ -249,83 +247,12 @@ export interface SignalStore<T> {
   ): Effect<T, R>;
 
   /**
-   * Selects a value from the state.
-   * @param selector The key of the value to select
-   * @returns A signal that emits the selected value
-   * @example
-   * const count = store.select('count');
-   * count.subscribe(console.log); // 0
-   */
-  select<K extends keyof BaseState<T>>(selector: K): Signal<BaseState<T>[K]>;
-
-  /**
-   * Computes a value from the state
-   * @param keys The keys of the values to compute
-   * @param fn The function that computes the value
-   * @returns A signal that emits the computed value
-   * @example
-   * const count = store.compute('count', 'error', (count, error) => ({ count, error }));
-   * count.subscribe(console.log); // { count: 0, error: undefined }
-   *
-   */
-  compute<K1 extends keyof BaseState<T>, R>(s1: K1, fn: (v1: BaseState<T>[K1]) => R): Signal<R>;
-
-  compute<K1 extends keyof BaseState<T>, K2 extends keyof BaseState<T>, R>(
-    s1: K1,
-    s2: K2,
-    fn: (v1: BaseState<T>[K1], v2: BaseState<T>[K2]) => R,
-  ): Signal<R>;
-
-  compute<K1 extends keyof BaseState<T>, K2 extends keyof BaseState<T>, K3 extends keyof BaseState<T>, R>(
-    s1: K1,
-    s2: K2,
-    s3: K3,
-    fn: (v1: BaseState<T>[K1], v2: BaseState<T>[K2], v3: BaseState<T>[K3]) => R,
-  ): Signal<R>;
-
-  compute<
-    K1 extends keyof BaseState<T>,
-    K2 extends keyof BaseState<T>,
-    K3 extends keyof BaseState<T>,
-    K4 extends keyof BaseState<T>,
-    R,
-  >(
-    s1: K1,
-    s2: K2,
-    s3: K3,
-    s4: K4,
-    fn: (v1: BaseState<T>[K1], v2: BaseState<T>[K2], v3: BaseState<T>[K3], v4: BaseState<T>[K4]) => R,
-  ): Signal<R>;
-
-  compute<
-    K1 extends keyof BaseState<T>,
-    K2 extends keyof BaseState<T>,
-    K3 extends keyof BaseState<T>,
-    K4 extends keyof BaseState<T>,
-    K5 extends keyof BaseState<T>,
-    R,
-  >(
-    s1: K1,
-    s2: K2,
-    s3: K3,
-    s4: K4,
-    s5: K5,
-    fn: (
-      v1: BaseState<T>[K1],
-      v2: BaseState<T>[K2],
-      v3: BaseState<T>[K3],
-      v4: BaseState<T>[K4],
-      v5: BaseState<T>[K5],
-    ) => R,
-  ): Signal<R>;
-
-  /**
    * Undo the last change
    */
   undo(): void;
 
   /**
-   * Redo the last change
+   * Redo the last undone change
    */
   redo(): void;
 
@@ -335,35 +262,40 @@ export interface SignalStore<T> {
   canUndo(): boolean;
 
   /**
-   * Check if the store can redo the last change
+   * Check if the store can redo the last undone change
    */
   canRedo(): boolean;
+
+  /**
+   * Stops every source, reducer and effect created through this store and completes its observable
+   */
+  destroy(): void;
 }
 
-const emitState = <T>(state: BehaviorSubject<T>, nextState: T) => {
-  if (Object.is(state.value, nextState)) {
-    return;
-  }
-  state.next(nextState);
-};
+/**
+ * Delivers every value to all subscribers before the next one, even when a subscriber emits synchronously.
+ */
+const createOrderedPublisher = <T>(subject: Subject<T>) => {
+  const queue: T[] = [];
+  let publishing = false;
 
-const signalReducer =
-  <T>(state: BehaviorSubject<T>) =>
-  (fn: (draft: T) => void) => {
-    emitState(state, produce(state.value, fn));
-  };
-
-const signalReducerWithPatches =
-  <T>(state: BehaviorSubject<T>, history: PatchHistory) =>
-  (fn: (draft: T) => void) => {
-    const currentState = state.value;
-    const [nextState, patches, inversePatches] = produceWithPatches(currentState, fn);
-    if (patches.length === 0) {
+  return (value: T) => {
+    queue.push(value);
+    if (publishing) {
       return;
     }
-    history.addPatches(patches, inversePatches);
-    emitState(state, nextState);
+
+    publishing = true;
+    try {
+      for (let index = 0; index < queue.length; index++) {
+        subject.next(queue[index]);
+      }
+    } finally {
+      queue.length = 0;
+      publishing = false;
+    }
   };
+};
 
 /**
  * Create a store with the given initial state
@@ -371,80 +303,92 @@ const signalReducerWithPatches =
  * @param options
  */
 export const createStore = <T>(initialState: BaseState<T>, options?: SignalStateOptions): SignalStore<T> => {
-  let history: PatchHistory | undefined;
   if (options?.withPatches) {
     enablePatches();
-    history = createPatchHistory(options.historyLimit);
   }
   if (options?.withMapSet) {
     enableMapSet();
   }
-  const stateObservable = new BehaviorSubject(initialState);
-  const state = signal(initialState);
-  const selectors = createSelectorRegistry(state);
-  stateObservable.subscribe((newState) => {
-    state.set(newState);
-    selectors.update(newState);
-  });
-  const reduceState = signalReducer(stateObservable);
-  const reduceStateWithPatches = history ? signalReducerWithPatches(stateObservable, history) : undefined;
-  const signalStore: SignalStore<T> = () => state();
-  signalStore.asObservable = () => stateObservable;
-  signalStore.source = <S>(startValue?: S): Source<T, S> => createSource(signalStore, startValue);
-  signalStore.select = selectors.select;
-  signalStore.compute = <R>(...args: any[]): Signal<R> => {
-    const keys = args.slice(0, args.length - 1) as (keyof BaseState<T>)[];
-    const fn = args[args.length - 1] as (...values: any[]) => R;
-    return selectors.compute(keys, fn);
+  const history = options?.withPatches ? createPatchHistory(options.historyLimit) : undefined;
+  const state = createState(initialState);
+  const changes = new BehaviorSubject(initialState);
+  const changes$ = changes.asObservable();
+  const publish = createOrderedPublisher(changes);
+  const lifetime = new Subscription();
+
+  const commit = (nextState: BaseState<T>) => {
+    if (state.set(nextState)) {
+      publish(nextState);
+    }
   };
-  signalStore.reduce = (...args: any[]): any => {
-    if (args.length === 1) {
-      const reducer = args[0];
-      if (reduceStateWithPatches) {
-        reduceStateWithPatches(reducer);
-        return;
-      }
-      reduceState(reducer);
+
+  const reduceState = (fn: (draft: BaseState<T>) => void) => {
+    if (!history) {
+      commit(produce(state.current(), fn));
       return;
     }
 
-    const sources: Source<any, any>[] = args.slice(0, -1);
-    const reducer = args[args.length - 1];
-    return combineLatest(sources.map((s) => s.asObservable())).subscribe((value) => {
-      signalStore.reduce((draft) => {
-        reducer(draft, ...value);
+    const [nextState, patches, inversePatches] = produceWithPatches(state.current(), fn);
+    if (patches.length === 0) {
+      return;
+    }
+    history.addPatches(patches, inversePatches);
+    commit(nextState);
+  };
+
+  const applyHistory = (patches: Patch[]) => {
+    commit(applyPatches(state.current(), patches));
+  };
+
+  const splitSources = (args: unknown[]) => ({
+    sources: args.slice(0, -1) as Source<T, unknown>[],
+    fn: args.at(-1) as (...values: never[]) => unknown,
+  });
+
+  const store: SignalStore<T> = Object.assign(() => state.read(), {
+    select: state.select,
+    compute: state.compute,
+    asObservable: () => changes$,
+    source: <S>(startValue?: S): Source<T, S> => createSource(store, startValue, lifetime),
+    reduce: (...args: unknown[]): Subscription | undefined => {
+      if (args.length === 1) {
+        reduceState(args[0] as (draft: BaseState<T>) => void);
+        return undefined;
+      }
+
+      const {sources, fn} = splitSources(args);
+      const subscription = combineLatest(sources.map((source) => source.asObservable())).subscribe((values) => {
+        reduceState((draft) => fn(...([draft, ...values] as never[])));
       });
-    });
-  };
+      lifetime.add(subscription);
+      return subscription;
+    },
+    effect: <R>(...args: unknown[]): Effect<T, R> => {
+      if (args.length === 1) {
+        return createStoreEffect(store, args[0] as (value: BaseState<T>) => void, lifetime);
+      }
 
-  signalStore.effect = <R>(...args: any[]): Effect<T, R> => {
-    if (args.length === 1) {
-      const effectFn = args[0];
-      return createStoreEffect(signalStore, effectFn);
-    }
-    const sources: Source<any, any>[] = args.slice(0, args.length - 1);
-    const observables = sources.map((s) => s.asObservable());
-    const effectFn = args[args.length - 1];
-    const combinedSource = combineLatest(observables);
-    return createEffect(signalStore, combinedSource, effectFn);
-  };
+      const {sources, fn} = splitSources(args);
+      const values$ = combineLatest(sources.map((source) => source.asObservable()));
+      return createEffect(store, values$, fn as (...values: unknown[]) => Observable<R>, lifetime);
+    },
+    undo: () => {
+      if (history?.canUndo()) {
+        applyHistory(history.undo());
+      }
+    },
+    redo: () => {
+      if (history?.canRedo()) {
+        applyHistory(history.redo());
+      }
+    },
+    canUndo: () => history?.canUndo() ?? false,
+    canRedo: () => history?.canRedo() ?? false,
+    destroy: () => {
+      lifetime.unsubscribe();
+      changes.complete();
+    },
+  }) as SignalStore<T>;
 
-  signalStore.undo = () => {
-    if (history?.canUndo()) {
-      const patches = history.undo();
-      stateObservable.next(applyPatches(stateObservable.value, patches));
-    }
-  };
-
-  signalStore.redo = () => {
-    if (history?.canRedo()) {
-      const patches = history.redo();
-      stateObservable.next(applyPatches(stateObservable.value, patches));
-    }
-  };
-
-  signalStore.canUndo = () => (history ? history.canUndo() : false);
-  signalStore.canRedo = () => (history ? history.canRedo() : false);
-
-  return signalStore;
+  return store;
 };

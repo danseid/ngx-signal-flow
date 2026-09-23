@@ -1,4 +1,4 @@
-import {of, throwError} from 'rxjs';
+import {of, Subject, throwError} from 'rxjs';
 import {createStore} from './signal.store';
 import {createCoreStore} from './signal.core';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
@@ -231,6 +231,79 @@ describe('State Store Effects Test', () => {
 
     source2(3);
     expect(store().count).toBe(5);
+  });
+
+  it('delivers changes in order when a store effect reduces synchronously', () => {
+    const store = createStore({count: 0});
+    store.effect((state) => {
+      if (state.count === 1) {
+        store.reduce((draft) => {
+          draft.count = 2;
+        });
+      }
+    });
+    const seen: number[] = [];
+    store.asObservable().subscribe((state) => seen.push(state.count));
+
+    store.reduce((draft) => {
+      draft.count = 1;
+    });
+
+    expect(seen).toEqual([0, 1, 2]);
+    expect(store().count).toBe(2);
+  });
+
+  it('does not expose a writable subject', () => {
+    const store = createStore({count: 0});
+
+    expect(store.asObservable()).not.toBeInstanceOf(Subject);
+    expect('next' in store.asObservable()).toBe(false);
+  });
+
+  describe('destroy', () => {
+    it('stops sources, reducers and effects created through the store', () => {
+      const store = createStore({count: 0, doubled: 0});
+      const source = store.source<number>();
+      source.reduce((draft, value) => {
+        draft.count = value;
+      });
+      store.reduce(source, (draft, value) => {
+        draft.doubled = value * 2;
+      });
+      const running = new Subject<number>();
+      const effect = source.effect(() => running);
+      source(1);
+      expect(effect.loading()).toBe(true);
+
+      store.destroy();
+      source(2);
+      running.next(3);
+
+      expect(store()).toEqual({count: 1, doubled: 2});
+      expect(effect.loading()).toBe(false);
+    });
+
+    it('completes the state observable', () => {
+      const store = createStore({count: 0});
+      let completed = false;
+      store.asObservable().subscribe({complete: () => (completed = true)});
+
+      store.destroy();
+
+      expect(completed).toBe(true);
+    });
+
+    it('releases sources that were destroyed on their own', () => {
+      const store = createStore({count: 0});
+      const source = store.source<number>();
+      let completed = false;
+      source.asObservable().subscribe({complete: () => (completed = true)});
+
+      source.destroy();
+
+      expect(completed).toBe(true);
+      expect(() => store.destroy()).not.toThrow();
+    });
   });
 
   describe('reducing inside an Angular effect', () => {

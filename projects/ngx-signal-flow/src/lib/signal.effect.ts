@@ -1,7 +1,8 @@
 import {signal, untracked} from '@angular/core';
 import type {Signal} from '@angular/core';
-import {finalize} from 'rxjs';
-import type {Observable, Subscription} from 'rxjs';
+import {finalize, Subscription} from 'rxjs';
+import type {Observable} from 'rxjs';
+import type {BaseState} from './signal.core';
 import type {SignalStore} from './signal.store';
 
 /**
@@ -22,7 +23,11 @@ export interface Effect<S, R> {
   destroy(): void;
 }
 
-export const createStoreEffect = <S, R>(store: SignalStore<S>, effectFn: (value: S) => void): Effect<S, R> => {
+export const createStoreEffect = <S, R>(
+  store: SignalStore<S>,
+  effectFn: (value: BaseState<S>) => void,
+  lifetime?: Subscription,
+): Effect<S, R> => {
   const loading = signal(false);
   const subscription = store.asObservable().subscribe((state) => {
     loading.set(true);
@@ -32,6 +37,7 @@ export const createStoreEffect = <S, R>(store: SignalStore<S>, effectFn: (value:
       loading.set(false);
     }
   });
+  lifetime?.add(subscription);
   return {
     loading: loading.asReadonly(),
     reduce: () => undefined,
@@ -50,6 +56,7 @@ export const createEffect = <S, T, R>(
   store: SignalStore<S>,
   source: Observable<T>,
   effectFn: (...value: T[]) => Observable<R>,
+  lifetime?: Subscription,
 ): Effect<S, R> => {
   let effectSubscription: Subscription | undefined;
   const loading = signal(false);
@@ -93,15 +100,18 @@ export const createEffect = <S, T, R>(
     });
   });
 
+  const effectLifetime = new Subscription(() => {
+    effectSubscription?.unsubscribe();
+    loading.set(false);
+  });
+  effectLifetime.add(sourceSubscription);
+  lifetime?.add(effectLifetime);
+
   return {
     loading: loading.asReadonly(),
     reduce: (fn: (draft: S, value: R) => void) => {
       reducer = fn;
     },
-    destroy: () => {
-      sourceSubscription.unsubscribe();
-      effectSubscription?.unsubscribe();
-      loading.set(false);
-    },
+    destroy: () => effectLifetime.unsubscribe(),
   };
 };

@@ -40,10 +40,11 @@ export interface Source<T, S> {
   destroy(): void;
 }
 
-export const createSource = <T, S>(store: SignalStore<T>, startValue?: S): Source<T, S> => {
+export const createSource = <T, S>(store: SignalStore<T>, startValue?: S, lifetime?: Subscription): Source<T, S> => {
   const subject: Subject<S> =
     startValue !== undefined && startValue !== null ? new BehaviorSubject<S>(startValue) : new Subject<S>();
-  const subscriptions = new Subscription();
+  const subscriptions = new Subscription(() => subject.complete());
+  lifetime?.add(subscriptions);
   const source = ((value?: S) => subject.next(value as S)) as Source<T, S>;
   source.asObservable = () => subject.asObservable();
   source.reduce = (fn: (draft: T, value: S) => void) => {
@@ -56,9 +57,7 @@ export const createSource = <T, S>(store: SignalStore<T>, startValue?: S): Sourc
     return subscription;
   };
   source.effect = <R>(effectFn: (value: S) => Observable<R>): Effect<T, R> => {
-    const effect = createEffect(store, source.asObservable(), effectFn);
-    subscriptions.add(() => effect.destroy());
-    return effect;
+    return createEffect(store, source.asObservable(), effectFn, subscriptions);
   };
   source.connect = (inputSignal: Signal<S | undefined>, options?: ConnectOptions) => {
     const skipUndefined = options?.skipUndefined !== false;
@@ -69,9 +68,6 @@ export const createSource = <T, S>(store: SignalStore<T>, startValue?: S): Sourc
     subscriptions.add(subscription);
     return source;
   };
-  source.destroy = () => {
-    subscriptions.unsubscribe();
-    subject.complete();
-  };
+  source.destroy = () => subscriptions.unsubscribe();
   return source;
 };

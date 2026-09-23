@@ -1,38 +1,56 @@
 import {computed, signal, untracked} from '@angular/core';
-import type {Signal, WritableSignal} from '@angular/core';
+import type {Signal} from '@angular/core';
 import {produce} from 'immer';
 
 export type BaseState<T> = T & {error?: Error};
 
+type StateKey<T> = keyof BaseState<T>;
+
 export interface CoreSignalStore<T> {
+  /**
+   * Returns the current state and tracks it when read in a reactive context
+   */
   (): BaseState<T>;
 
+  /**
+   * Updates the state with an Immer recipe. Unchanged drafts do not notify anyone.
+   * @example
+   * store.reduce(draft => {
+   *   draft.count += 1;
+   * });
+   */
   reduce(fn: (draft: BaseState<T>) => void): void;
 
-  select<K extends keyof BaseState<T>>(selector: K): Signal<BaseState<T>[K]>;
+  /**
+   * Returns a memoized signal of one state key
+   * @example
+   * const count = store.select('count');
+   * count(); // 0
+   */
+  select<K extends StateKey<T>>(selector: K): Signal<BaseState<T>[K]>;
 
-  compute<K1 extends keyof BaseState<T>, R>(s1: K1, fn: (v1: BaseState<T>[K1]) => R): Signal<R>;
+  /**
+   * Derives a signal from one or more state keys. It only recomputes when one of the keys changes.
+   * @example
+   * const summary = store.compute('count', 'error', (count, error) => ({count, error}));
+   * summary(); // {count: 0, error: undefined}
+   */
+  compute<K1 extends StateKey<T>, R>(s1: K1, fn: (v1: BaseState<T>[K1]) => R): Signal<R>;
 
-  compute<K1 extends keyof BaseState<T>, K2 extends keyof BaseState<T>, R>(
+  compute<K1 extends StateKey<T>, K2 extends StateKey<T>, R>(
     s1: K1,
     s2: K2,
     fn: (v1: BaseState<T>[K1], v2: BaseState<T>[K2]) => R,
   ): Signal<R>;
 
-  compute<K1 extends keyof BaseState<T>, K2 extends keyof BaseState<T>, K3 extends keyof BaseState<T>, R>(
+  compute<K1 extends StateKey<T>, K2 extends StateKey<T>, K3 extends StateKey<T>, R>(
     s1: K1,
     s2: K2,
     s3: K3,
     fn: (v1: BaseState<T>[K1], v2: BaseState<T>[K2], v3: BaseState<T>[K3]) => R,
   ): Signal<R>;
 
-  compute<
-    K1 extends keyof BaseState<T>,
-    K2 extends keyof BaseState<T>,
-    K3 extends keyof BaseState<T>,
-    K4 extends keyof BaseState<T>,
-    R,
-  >(
+  compute<K1 extends StateKey<T>, K2 extends StateKey<T>, K3 extends StateKey<T>, K4 extends StateKey<T>, R>(
     s1: K1,
     s2: K2,
     s3: K3,
@@ -41,11 +59,11 @@ export interface CoreSignalStore<T> {
   ): Signal<R>;
 
   compute<
-    K1 extends keyof BaseState<T>,
-    K2 extends keyof BaseState<T>,
-    K3 extends keyof BaseState<T>,
-    K4 extends keyof BaseState<T>,
-    K5 extends keyof BaseState<T>,
+    K1 extends StateKey<T>,
+    K2 extends StateKey<T>,
+    K3 extends StateKey<T>,
+    K4 extends StateKey<T>,
+    K5 extends StateKey<T>,
     R,
   >(
     s1: K1,
@@ -63,67 +81,55 @@ export interface CoreSignalStore<T> {
   ): Signal<R>;
 }
 
-type SelectorEntry = {
-  readonly: Signal<any>;
-  writable: WritableSignal<any>;
-};
+export const createState = <T>(initialState: BaseState<T>) => {
+  const state = signal(initialState);
+  const selections = new Map<StateKey<T>, Signal<unknown>>();
 
-export const createSelectorRegistry = <T>(state: Signal<BaseState<T>>) => {
-  const entries = new Map<keyof BaseState<T>, SelectorEntry>();
-
-  const entryFor = <K extends keyof BaseState<T>>(key: K): SelectorEntry => {
-    const existingEntry = entries.get(key);
-    if (existingEntry) {
-      return existingEntry;
+  const select = <K extends StateKey<T>>(key: K): Signal<BaseState<T>[K]> => {
+    const existingSelection = selections.get(key);
+    if (existingSelection) {
+      return existingSelection as Signal<BaseState<T>[K]>;
     }
 
-    const writable = signal(untracked(state)[key]);
-    const entry = {
-      readonly: writable.asReadonly(),
-      writable,
-    };
-    entries.set(key, entry);
-    return entry;
+    const selection = computed(() => state()[key]);
+    selections.set(key, selection);
+    return selection;
   };
 
-  const select = <K extends keyof BaseState<T>>(key: K): Signal<BaseState<T>[K]> => entryFor(key).readonly;
-
-  const computeValue = <R>(keys: (keyof BaseState<T>)[], fn: (...values: any[]) => R): Signal<R> => {
-    const inputs = keys.map(entryFor);
-    return computed(() => fn(...inputs.map((input) => input.readonly())));
+  const compute = <R>(...args: unknown[]): Signal<R> => {
+    const keys = args.slice(0, -1) as StateKey<T>[];
+    const fn = args.at(-1) as (...values: unknown[]) => R;
+    const inputs = keys.map(select);
+    return computed(() => fn(...inputs.map((input) => input())));
   };
 
-  const update = (nextState: BaseState<T>) => {
-    entries.forEach((entry, key) => entry.writable.set(nextState[key]));
+  const current = () => untracked(state);
+
+  const set = (nextState: BaseState<T>): boolean => {
+    if (Object.is(current(), nextState)) {
+      return false;
+    }
+    state.set(nextState);
+    return true;
   };
 
   return {
-    compute: computeValue,
+    read: state.asReadonly(),
+    current,
+    set,
     select,
-    update,
+    compute,
   };
 };
 
 export const createCoreStore = <T>(initialState: BaseState<T>): CoreSignalStore<T> => {
-  const state = signal(initialState);
-  const selectors = createSelectorRegistry(state);
-  const store: CoreSignalStore<T> = () => state();
+  const state = createState(initialState);
 
-  store.reduce = (fn) => {
-    const currentState = untracked(state);
-    const nextState = produce(currentState, fn);
-    if (Object.is(currentState, nextState)) {
-      return;
-    }
-
-    state.set(nextState);
-    selectors.update(nextState);
-  };
-  store.select = selectors.select;
-  store.compute = <R>(...args: any[]): Signal<R> => {
-    const keys = args.slice(0, -1) as (keyof BaseState<T>)[];
-    return selectors.compute(keys, args.at(-1));
-  };
-
-  return store;
+  return Object.assign(() => state.read(), {
+    reduce: (fn: (draft: BaseState<T>) => void) => {
+      state.set(produce(state.current(), fn));
+    },
+    select: state.select,
+    compute: state.compute,
+  });
 };
