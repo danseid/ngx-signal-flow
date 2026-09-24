@@ -248,10 +248,23 @@ describe('State Store Effects Test', () => {
     expect(store().label).toBe('SUM');
     expect(sum()).toBe(21);
 
-    // @ts-expect-error unknown state key
-    store.compute('missing', (value) => value);
-    // @ts-expect-error source values keep their types
-    store.reduce(text, (draft, value: number) => (draft.total = value));
+    const typeOnlyChecks = () => {
+      // @ts-expect-error unknown state key
+      store.compute('missing', (value) => value);
+      // @ts-expect-error source values keep their types
+      store.reduce(text, (draft, value: number) => (draft.total = value));
+    };
+    expect(typeOnlyChecks).toBeTypeOf('function');
+  });
+
+  it('ignores values returned by combined source reducers', () => {
+    const store = createStore({items: [] as string[]});
+    const add = store.source<string>();
+    store.reduce(add, (draft, item) => draft.items.push(item));
+
+    add('apple');
+
+    expect(store().items).toEqual(['apple']);
   });
 
   it('delivers changes in order when a store effect reduces synchronously', () => {

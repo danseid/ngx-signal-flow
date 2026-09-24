@@ -196,7 +196,9 @@ export const createStore = <T>(initialState: BaseState<T>, ...features: StoreFea
 
       const {sources, fn} = splitSources(args);
       const subscription = combineLatest(sources.map((source) => source.asObservable())).subscribe((values) => {
-        reduceState((draft) => fn(...([draft, ...values] as never[])));
+        reduceState((draft) => {
+          fn(...([draft, ...values] as never[]));
+        });
       });
       lifetime.add(subscription);
       return subscription;
