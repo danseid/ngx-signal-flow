@@ -10,6 +10,7 @@
     "test": "ng test ngx-signal-flow --no-watch --no-progress",
     "test:example": "ng test example --no-watch --no-progress",
     "test:coverage": "ng test ngx-signal-flow --no-watch --no-progress --coverage --coverage-reporters text --coverage-reporters json-summary",
+    "prelint": "npm run build:lib",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

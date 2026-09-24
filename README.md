@@ -373,7 +373,7 @@ const search = store.effect(source1, source2, (value1, value2) => {
 ## 🛠️ Development
 
 - `npm test` runs the library tests, and `npm run test:coverage` adds a coverage report.
-- `npm run lint` and `npm run format:check` run ESLint and Prettier.
+- `npm run lint` builds the library, because the example app imports the build, and runs ESLint. `npm run format:check` runs Prettier.
 - `npm start` builds the library and serves the example app against the build.
 - `npm run compatibility` installs the built library into a fresh project and type-checks and runs it. Pass versions like `-- --angular 19.0 --rxjs 7.5.5 --immer 10.1 --typescript 5.5`.
 - `tools/system-npm` replaces the copy of npm that `@semantic-release/npm` would otherwise install with a shim that calls the npm bundled with Node. This keeps `npm audit` free of findings from that nested copy.
