@@ -1,3 +1,35 @@
+# [1.0.0](https://github.com/danseid/ngx-signal-flow/compare/v0.4.0...v1.0.0) (2026-09-24)
+
+
+### Bug Fixes
+
+* **deps:** require rxjs 7.5.5 and drop the unused @angular/common peer ([425a9cf](https://github.com/danseid/ngx-signal-flow/commit/425a9cf6a7e71cde10d2a6a51c24c555855cec9e))
+* ignore values returned by combined source reducers ([9047681](https://github.com/danseid/ngx-signal-flow/commit/9047681a19f72d997b600a619876c63c09536435))
+* keep null source start values and tighten source types ([af2c2a6](https://github.com/danseid/ngx-signal-flow/commit/af2c2a6ae4512ad876977fcb8dca088409c48385))
+* keep store state in one signal and publish changes in order ([a50abcb](https://github.com/danseid/ngx-signal-flow/commit/a50abcb871237077e61bbb70fbe02c0a6e6a1cf5))
+* scope effect errors to their effect and replay early results ([f5e6162](https://github.com/danseid/ngx-signal-flow/commit/f5e61627c0ab67a28e0185bf7ee43afd04128d7a))
+
+
+### Features
+
+* make history and Map/Set opt-in features ([23bab79](https://github.com/danseid/ngx-signal-flow/commit/23bab79b38eac58434fc8eb3042545d0574d5f0c))
+
+
+### BREAKING CHANGES
+
+* **deps:** rxjs versions before 7.5.5 are no longer accepted as a peer
+dependency.
+* the { withPatches, withMapSet, historyLimit } options were
+removed and throw an error that points to the replacement. Use withHistory(),
+withHistory({limit}) and withMapSet(). History keeps 100 steps unless
+withHistory({limit: Infinity}) is used. canUndo and canRedo are signals; calls
+like store.canUndo() keep working.
+* calling a source without a value only compiles when its type
+accepts undefined, for example Source<T, void>. A Source<T, number> called
+without an argument used to emit undefined.
+* store.effect(fn) returns a StoreEffect with only destroy().
+Its loading signal was always false and its reduce did nothing.
+
 # [0.4.0](https://github.com/danseid/ngx-signal-flow/compare/v0.3.0...v0.4.0) (2026-09-23)
 
 
